@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "aplnb"
+  site-url: "https://answerdotai.github.io/aplnb"
+  description: "AI magic"
+  repo-branch: main
+  repo-url: "https://github.com/answerdotai/aplnb"
