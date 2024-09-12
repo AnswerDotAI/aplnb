@@ -50,7 +50,7 @@ setuptools.setup(
     url = cfg['git_url'],
     packages = setuptools.find_packages(),
     include_package_data = True,
-    data_files=[ ],
+    package_data={'aplnb': ['lb.js']},
     install_requires = requirements,
     extras_require={ 'dev': dev_requirements },
     python_requires  = '>=' + cfg['min_python'],

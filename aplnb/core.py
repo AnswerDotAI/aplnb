@@ -9,22 +9,27 @@ __all__ = ['APLMagic', 'create_magic', 'load_ipython_extension', 'create_ipython
 from pynapl.APL import APL
 from pathlib import Path
 from IPython.core.magic import register_cell_magic
-from IPython.display import display, HTML
+from IPython.display import display, Javascript
 from IPython.paths import get_ipython_dir
 
 # %% ../00_core.ipynb
 class APLMagic:
     def __init__(self):
         self.o = APL()
-        self.script_loaded = False
+        self._loaded = False
 
     def apl(self, line, cell=None):
         if line and not cell: cell=line
-        if not self.script_loaded:
-            display(HTML('<script src="https://abrudz.github.io/lb/lb.js"></script>'))
-            self.script_loaded = True
-        res = self.o.eval(cell)
-        if line: return res
+        cell = cell.rstrip()
+        if not self._loaded:
+            p = Path(__file__).resolve().parent
+            js = (p/'lb.js').read_text()
+            display(Javascript(js))
+            self._loaded = True
+        disp = True
+        if cell.endswith(';'): disp,cell = False,cell[:-1]
+        res = self.o.eval(cell) or None
+        if disp: return res
 
 # %% ../00_core.ipynb
 def create_magic(shell=None):
