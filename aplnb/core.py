@@ -6,6 +6,7 @@
 __all__ = ['APLMagic', 'create_magic', 'load_ipython_extension', 'create_ipython_config']
 
 # %% ../00_core.ipynb
+import re,os
 from pynapl.APL import APL
 from pathlib import Path
 from IPython.core.magic import register_cell_magic
@@ -21,7 +22,9 @@ class APLMagic:
 
     def apl(self, line, cell=None):
         if line and not cell: cell=line
-        cell = cell.rstrip()
+        cell = '\n'.join(l.split('⍝')[0].rstrip() for l in cell.strip().split('\n'))
+        if re.search('^\s*]', cell, flags=re.MULTILINE):
+            return print("`]` Dyalog commands are not supported in aplnb")
         if not self._loaded:
             p = Path(__file__).resolve().parent
             js = (p/'lb.js').read_text()
