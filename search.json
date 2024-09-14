@@ -1,0 +1,66 @@
+[
+  {
+    "objectID": "core.html",
+    "href": "core.html",
+    "title": "aplnb IPython magic",
+    "section": "",
+    "text": "__file__ = './00_core.ipynb'\n\n\nsource\n\nAPLMagic\n\n APLMagic ()\n\nInitialize self. See help(type(self)) for accurate signature.\n\nsource\n\n\ncreate_magic\n\n create_magic (shell=None)\n\n\n# Only required if you don't load the extension\ncreate_magic()\n\n\n%%apl\nx←⍳3  ⍝ Set x to positive integers up to 3\n\n\n\n\n[1, 2, 3]\n\n\n\n%%apl\nx←⍳3  ⍝ Set x to positive integers up to 3\n\n[1, 2, 3]\n\n\n\n%apl x  ⍝ Get the value of x\n\n[1, 2, 3]\n\n\n\n%%apl\n⎕←x;  ⍝ Add a ';' to skip returning the last result\n\n1 2 3\n\n\n\nx = %apl x\nx\n\n[1, 2, 3]\n\n\n\n%apl ⎕A\n\n'ABCDEFGHIJKLMNOPQRSTUVWXYZ'\n\n\n\nsource\n\n\nload_ipython_extension\n\n load_ipython_extension (ipython)\n\nRequired function for creating magic\n\nsource\n\n\ncreate_ipython_config\n\n create_ipython_config ()\n\nCalled by aplnb_install to install magic\n\ndef dyalog_cmd():\n    \"Helper function to get shell command to run Dyalog\"\n    dyalogscript_path = Path(which('dyalogscript.bash'))\n    cts = dyalogscript_path.read_text()\n    install_dir = re.search(r'^INSTALLDIR=\"([^\"]*)\"', cts, flags=re.MULTILINE).group(1)\n    install_dir = \"/Applications/Dyalog-19.0.app/Contents/Resources/dyalog\"\n    script_dir = os.environ.get('SCRIPT_DIR', install_dir)\n    return f'{script_dir}/dyalog APLKEYS=\"{install_dir}/aplkeys\" APLTRANS=\"{install_dir}/apltrans\"'\n\n\ndyalog_cmd()\n\n'/Applications/Dyalog-19.0.app/Contents/Resources/dyalog/dyalog APLKEYS=\"/Applications/Dyalog-19.0.app/Contents/Resources/dyalog/aplkeys\" APLTRANS=\"/Applications/Dyalog-19.0.app/Contents/Resources/dyalog/apltrans\"'",
+    "crumbs": [
+      "aplnb IPython magic"
+    ]
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Using apl magics",
+    "section": "",
+    "text": "aplnb adds %apl and %%apl functions to Jupyter and IPython, which exectute expressions in Dyalog APL.",
+    "crumbs": [
+      "Using `apl` magics"
+    ]
+  },
+  {
+    "objectID": "index.html#installation",
+    "href": "index.html#installation",
+    "title": "Using apl magics",
+    "section": "Installation",
+    "text": "Installation\nFirst, install Dyalog APL. Dyalog provides a basic license for free. Once Dyalog is installed, install aplnb with:\npip install aplnb\nOnce that’s complete, you can install the magics to all IPython and Jupyter sessions automatically by running in your terminal:\naplnb_install",
+    "crumbs": [
+      "Using `apl` magics"
+    ]
+  },
+  {
+    "objectID": "index.html#usage",
+    "href": "index.html#usage",
+    "title": "Using apl magics",
+    "section": "Usage",
+    "text": "Usage\nAfter first running an apl magic in a notebook, the APL language bar by Adám Brudzewsky is automatically added to the current page. (There is one change to Adám’s original version, which is that you can type a backtick twice in a row to enter triple backticks. To get a ⋄ glyph, type backtick-q.)\nYou can use either a cell magic (%%ai) or a line magic (%ai). In either case the expression is evaluated and returned:\n\n%%apl\ny←⍳3\nz←y×y\n\n\n\n\n[1, 4, 9]\n\n\n\n%apl 3×⍳4\n\n[3, 6, 9, 12]\n\n\n\n%apl ⎕A\n\n'ABCDEFGHIJKLMNOPQRSTUVWXYZ'\n\n\nYou can store the value of an expression in a python variable using the line magic. Scalars, lists, and nest lists are used:\n\nz = %apl z\nprint(z)\n\n[1, 4, 9]\n\n\nTo avoid having the expression returned and/or displayed, end the last line with a ;.\n\n%%apl\na←2 2 ⍴ ⍳4;\n\nYou can print from cell magics using the standard APL ⎕ glyph:\n\n%%apl\n⎕←a;\n\n1 2\n3 4\n\n\nTo use numpy, just pass the result of %apl into np.array:\n\nimport numpy as np\n\n\na = %apl a\nnp.array(a)\n\narray([[1, 2],\n       [3, 4]])\n\n\n\nExample algorithms\nThe fibonacci sequence:\n\n%apl {⍵,+/¯2↑⍵}⍣15⊢1 1\n\n\n\n\n[1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597]\n\n\nExplanation:\n\n1 1: Initial seed (first two Fibonacci numbers)\n{⍵,+/¯2↑⍵}: Function that appends the sum of the last two elements\n⍣15: Apply the function 15 times\n⊢: Identity function, passes the initial argument (1 1) to the iteration\n\nPrime number sieve:\n\n%%apl\nprimes ← {⍵×2=+⌿0=⍵∘.|⍵}⍳\n(primes 50)~0\n\n[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]\n\n\nExplanation:\n\n⍳50 generates integers 1 to 50\n⍵∘.|⍵ creates a 50x50 matrix of divisibility (1 if divisible, 0 if not)\n0= inverts the matrix (1 for non-divisible)\n+⌿ sums columns, counting non-divisors for each number\n2= checks if count equals 2 (prime property)\n⍵× multiplies result with original numbers, keeping primes\n~0 removes zero from the result",
+    "crumbs": [
+      "Using `apl` magics"
+    ]
+  },
+  {
+    "objectID": "index.html#learning-apl",
+    "href": "index.html#learning-apl",
+    "title": "Using apl magics",
+    "section": "Learning APL",
+    "text": "Learning APL\nTo start learning APL, follow the 17 video series run by Jeremy Howard, and have a look at the study notes. Note however that the comments there about using commands starting with ], such as ]Help ≠, will not work with aplnb, so you should skip them.",
+    "crumbs": [
+      "Using `apl` magics"
+    ]
+  },
+  {
+    "objectID": "CHANGELOG.html",
+    "href": "CHANGELOG.html",
+    "title": "Release notes",
+    "section": "",
+    "text": "Init release"
+  },
+  {
+    "objectID": "CHANGELOG.html#section",
+    "href": "CHANGELOG.html#section",
+    "title": "Release notes",
+    "section": "",
+    "text": "Init release"
+  }
+]
