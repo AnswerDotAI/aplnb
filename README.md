@@ -30,6 +30,7 @@ You can use either a cell magic (`%%ai`) or a line magic (`%ai`). In
 either case the expression is evaluated and returned:
 
 ``` python
+%%apl
 y←⍳3
 z←y×y
 ```
@@ -39,11 +40,13 @@ z←y×y
     [1, 4, 9]
 
 ``` python
+%apl 3×⍳4
 ```
 
     [3, 6, 9, 12]
 
 ``` python
+%apl ⎕A
 ```
 
     'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -62,12 +65,14 @@ To avoid having the expression returned and/or displayed, end the last
 line with a `;`.
 
 ``` python
+%%apl
 a←2 2 ⍴ ⍳4;
 ```
 
 You can print from cell magics using the standard APL ⎕ glyph:
 
 ``` python
+%%apl
 ⎕←a;
 ```
 

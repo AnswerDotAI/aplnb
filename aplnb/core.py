@@ -11,6 +11,7 @@ from pathlib import Path
 from IPython.core.magic import register_cell_magic
 from IPython.display import display, Javascript
 from IPython.paths import get_ipython_dir
+from shutil import which
 
 # %% ../00_core.ipynb
 class APLMagic:
@@ -38,10 +39,13 @@ def create_magic(shell=None):
     shell.register_magic_function(apl_magic.apl, 'line_cell', 'apl')
 
 # %% ../00_core.ipynb
-def load_ipython_extension(ipython): create_magic(shell=ipython)
+def load_ipython_extension(ipython):
+    "Required function for creating magic"
+    create_magic(shell=ipython)
 
 # %% ../00_core.ipynb
 def create_ipython_config():
+    "Called by `aplnb_install` to install magic"
     ipython_dir = Path(get_ipython_dir())
     cf = ipython_dir/'profile_default'/'ipython_config.py'
     cf.parent.mkdir(parents=True, exist_ok=True)
