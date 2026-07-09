@@ -46,6 +46,7 @@ output, rendered in Adám’s [SAX2](https://github.com/abrudz/SAX2) APL
 font, so results look exactly as they do in Dyalog:
 
 ``` python
+%%apl
 m←3 3⍴⍳9
 m×10
 ```
@@ -194,11 +195,13 @@ above printed nothing. The line magic (`%apl`) instead evaluates one
 expression and returns it as a Python value:
 
 ``` python
+%apl 3×⍳4
 ```
 
     [3, 6, 9, 12]
 
 ``` python
+%apl ⎕A
 ```
 
     'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -217,6 +220,7 @@ z
 To suppress a cell’s output, end the last line with a `;`:
 
 ``` python
+%%apl
 m×10;
 ```
 
@@ -224,6 +228,7 @@ m×10;
 would otherwise be shy:
 
 ``` python
+%%apl
 v←2×⍳5
 ⎕←v
 ```
@@ -250,6 +255,7 @@ np.array(a)
 The fibonacci sequence:
 
 ``` python
+%apl {⍵,+/¯2↑⍵}⍣15⊢1 1
 ```
 
     [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597]
@@ -265,6 +271,7 @@ Explanation:
 Prime number sieve:
 
 ``` python
+%%apl
 primes ← {⍵×2=+⌿0=⍵∘.|⍵}⍳
 (primes 50)~0
 ```
