@@ -1,4 +1,10 @@
+// APL language bar by Adám Brudzewsky: https://abrudz.github.io/lb (source: https://github.com/abrudz/lb)
+// MIT License, Copyright (c) 2011-2020 Nikolay G. Nikolov and Adam Brudzevski. This is a modified copy bundled with aplnb.
+// Changes from upstream: double backtick composes ```; insertion via insertText so undo and input events work;
+// Monaco editor support (incl. EditContext mode); dark mode; overlay/push-down toggle persisted per site;
+// idempotent injection; ResizeObserver-driven layout; @font-face with dead url() removed.
 ; (_ => {
+	if (document.querySelector('.ngn_lb')) return
 	let hc = { '<': '&lt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }, he = x => x.replace(/[<&'"]/g, c => hc[c]) //html chars and escape fn
 		, tcs = '<-←xx×/\\×:-÷*O⍟[-⌹-]⌹OO○77⌈FF⌈ll⌊LL⌊T_⌶II⌶|_⊥TT⊤-|⊣|-⊢=/≠L-≠<=≤<_≤>=≥>_≥==≡=_≡7=≢Z-≢vv∨^^∧^~⍲v~⍱^|↑v|↓((⊂cc⊂(_⊆c_⊆))⊃[|⌷|]⌷A|⍋V|⍒ii⍳i_⍸ee∊e_⍷' +
 			'uu∪UU∪nn∩/-⌿\\-⍀,-⍪rr⍴pp⍴O|⌽O-⊖O\\⍉::¨""¨~:⍨~"⍨*:⍣*"⍣oo∘o:⍤o"⍤O:⍥O"⍥[\'⍞\']⍞[]⎕[:⍠:]⍠[=⌸=]⌸[<⌺>]⌺o_⍎oT⍕o-⍕<>⋄^v⋄on⍝->→aa⍺ww⍵VV∇v-∇--¯0~⍬' +
@@ -27,59 +33,95 @@
 		for (let j = 0; j < bqk.length; j++)if (lbs[i][0] === bqv[j]) ks.push('\n` ' + bqk[j])
 		lbh += '<b title="' + he(lbs[i].slice(1) + (ks.length ? '\n' + ks.join('') : '')) + '">' + lbs[i][0] + '</b>'
 	}
+	let ovl; try { ovl = localStorage.getItem('ngn_lb_overlay') === '1' } catch (e) { ovl = !1 } //overlay mode: bar covers the top instead of pushing the page down
 	let d = document, el = d.createElement('div'); el.innerHTML =
-		`<div class=ngn_lb><span class=ngn_x title=Close>❎</span>${lbh}</div>
- <style>@font-face{font-family:"DejaVu Sans Mono";src:local("DejaVu Sans Mono"),url(DejaVuBQNSansMono.ttf)format('ttf');}</style>
+		`<div class=ngn_lb><span class=ngn_x title=Close>❎</span><span class=ngn_o title="Toggle overlay/push-down">${ovl ? '▼' : '▲'}</span>${lbh}</div>
  <style>
   .ngn_lb{position:fixed;top:0;left:0;right:0;background-color:#eee;color:#000;cursor:default;z-index:2147483647;
     font-family:"DejaVu Sans Mono",monospace;border-bottom:solid #999 1px;padding:2px 2px 0 2px;word-wrap:break-word;}
   .ngn_lb b{cursor:pointer;padding:0 1px;font-weight:normal}
   .ngn_lb b:hover,.ngn_bq .ngn_lb{background-color:#777;color:#fff}
-  .ngn_x{float:right;color:#999;cursor:pointer;margin-top:-3px}
+  .ngn_x,.ngn_o{float:right;color:#999;cursor:pointer;margin-top:-3px}
+  .ngn_o{margin-right:6px}
+  .ngn_o:hover{color:#00d}
   .ngn_x:hover{color:#f00}
+  @media (prefers-color-scheme:dark){
+   .ngn_lb{background-color:#222;color:#ddd;border-bottom-color:#555}
+   .ngn_lb b:hover,.ngn_bq .ngn_lb{background-color:#bbb;color:#000}
+   .ngn_x,.ngn_o{color:#666}
+  }
  </style>`
 	d.body.appendChild(el)
-	let t, ts = [], lb = el.firstChild, bqm = 0 //t:textarea or input, lb:language bar, bqm:backquote mode
+	let t, lb = el.firstChild, bqm = 0 //t:textarea or input, lb:language bar, bqm:backquote mode
 	let pd = x => x.preventDefault()
 	let ev = (x, t, f, c) => x.addEventListener(t, f, c)
-	ev(lb, 'mousedown', x => {
-		if (x.target.classList.contains('ngn_x')) { lb.hidden = 1; upd(); pd(x); return }
-		if (x.target.nodeName === 'B' && t) {
-			let i = t.selectionStart, j = t.selectionEnd, v = t.value, s = x.target.textContent
-			if (i != null && j != null) { t.value = v.slice(0, i) + s + v.slice(j); t.selectionStart = t.selectionEnd = i + 1 }
-			pd(x); return
+	let med = _ => { try { return window.monaco?.editor?.getEditors?.().find(e => e.hasTextFocus()) } catch (e) { } } //focused Monaco editor, if any
+	let ins = (t, s, del = 0) => { //insert s at caret (replacing selection, or del chars before it), keeping undo & input events
+		let m = med()
+		if (m) {
+			if (del) {
+				let p = m.getPosition()
+				m.executeEdits('lb', [{ range: { startLineNumber: p.lineNumber, startColumn: p.column - del, endLineNumber: p.lineNumber, endColumn: p.column }, text: s }])
+			} else m.trigger('keyboard', 'type', { text: s })
+			return
 		}
+		if (!t || t.selectionStart == null) return
+		if (del) t.selectionStart = t.selectionStart - del
+		if (!(d.execCommand && d.execCommand('insertText', !1, s))) {
+			let i = t.selectionStart
+			t.value = t.value.slice(0, i) + s + t.value.slice(t.selectionEnd)
+			t.selectionStart = t.selectionEnd = i + s.length
+			t.dispatchEvent(new Event('input', { bubbles: !0 }))
+		}
+	}
+	ev(lb, 'mousedown', x => {
+		if (x.target.classList.contains('ngn_x')) { lb.hidden = 1; upd() }
+		else if (x.target.classList.contains('ngn_o')) {
+			ovl = !ovl
+			x.target.textContent = ovl ? '▼' : '▲'
+			try { localStorage.setItem('ngn_lb_overlay', ovl ? '1' : '0') } catch (e) { }
+			upd()
+		} else if (x.target.nodeName === 'B') {
+			let s = x.target.textContent, m = med()
+			if (m) { m.focus(); ins(t, s) }
+			else if (t && t.selectionStart != null) { t.focus(); ins(t, s) }
+		}
+		pd(x) //always: clicking the bar must never steal focus
 	})
 	let fk = x => {
-		let t = x.target
+		let t = x.target, m = med(), i, v
+		if (m) { let p = m.getPosition(); i = p.column - 1; v = m.getModel().getLineContent(p.lineNumber) }
+		else { i = t.selectionStart; v = t.value }
 		if (bqm) {
-			let i = t.selectionStart, v = t.value, c = bqc[x.key]
+			let c = bqc[x.key]
 			if (x.key === '`') {
-				t.value = v.slice(0, i) + '```' + v.slice(i)
-				t.selectionStart = t.selectionEnd = i + 1
+				ins(t, '```')
+				if (m) { let p = m.getPosition(); m.setPosition({ lineNumber: p.lineNumber, column: p.column - 2 }) }
+				else t.selectionStart = t.selectionEnd = i + 1
 				bqm = 0
 				d.body.classList.remove('ngn_bq')
 				pd(x)
 				return !1
 			}
 			if (x.which > 31) { bqm = 0; d.body.classList.remove('ngn_bq') }
-			if (c) { t.value = v.slice(0, i) + c + v.slice(i); t.selectionStart = t.selectionEnd = i + 1; pd(x); return !1 }
+			if (c) { ins(t, c); pd(x); return !1 }
 		}
 		if (!x.ctrlKey && !x.shiftKey && !x.altKey && !x.metaKey) {
 			if ("`½²^º§ùµ°".indexOf(x.key) > -1) {
 				bqm = 1; d.body.classList.add('ngn_bq'); pd(x); // ` or other trigger symbol pressed, wait for next key
 			} else if (x.key == "Tab") {
-				let i = t.selectionStart, v = t.value, c = tc[v.slice(i - 2, i)]
-				if (c) { t.value = v.slice(0, i - 2) + c + v.slice(i); t.selectionStart = t.selectionEnd = i - 1; pd(x) }
+				let c = i >= 2 && tc[v.slice(i - 2, i)]
+				if (c) { ins(t, c, 2); pd(x) }
 			}
 		}
 	}
 	let ff = x => {
 		let t0 = x.target, nn = t0.nodeName.toLowerCase()
 		if (nn !== 'textarea' && (nn !== 'input' || t0.type !== 'text' && t0.type !== 'search')) return
-		t = t0; if (!t.ngn) { t.ngn = 1; ts.push(t); ev(t, 'keydown', fk) }
+		t = t0; if (!t.ngn) { t.ngn = 1; ev(t, 'keydown', fk) }
 	}
-	let upd = _ => { d.body.style.marginTop = lb.clientHeight + 'px' }
-	upd(); ev(window, 'resize', upd)
+	let upd = _ => { d.body.style.marginTop = ovl ? '' : lb.clientHeight + 'px' }
+	upd(); (window.ResizeObserver ? new ResizeObserver(upd).observe(lb) : ev(window, 'resize', upd))
 	ev(d, 'focus', ff, !0); let ae = d.activeElement; ae && ff({ type: 'focus', target: ae })
+	ev(d, 'keydown', x => { if (!x.target.ngn && x.target.closest?.('.monaco-editor')) fk(x) }, !0) //EditContext-mode Monaco has no textarea for ff to register
 })();
