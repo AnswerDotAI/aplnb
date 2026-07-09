@@ -181,10 +181,10 @@ m×10
 
 <style>
 @font-face { font-family:'SAX2'; src: local('SAX2'), url('https://cdn.jsdelivr.net/gh/abrudz/SAX2@master/SAX2.ttf') format('truetype') }
-.aplnb_out { font-family:'SAX2',monospace; line-height:1.05 }
+.sax2 { font-family:'SAX2',monospace !important; line-height:1.05 !important }
 </style>
 
-<pre class="aplnb_out">10 20 30
+<pre class="aplnb_out sax2">10 20 30
 40 50 60
 70 80 90</pre>
 
@@ -227,7 +227,7 @@ v←2×⍳5
 ⎕←v
 ```
 
-<pre class="aplnb_out">2 4 6 8 10</pre>
+<pre class="aplnb_out sax2">2 4 6 8 10</pre>
 
 To use numpy, just pass the result of `%apl` into `np.array`:
 
@@ -268,7 +268,7 @@ primes ← {⍵×2=+⌿0=⍵∘.|⍵}⍳
 (primes 50)~0
 ```
 
-<pre class="aplnb_out">2 3 5 7 11 13 17 19 23 29 31 37 41 43 47</pre>
+<pre class="aplnb_out sax2">2 3 5 7 11 13 17 19 23 29 31 37 41 43 47</pre>
 
 Explanation:
 
@@ -297,7 +297,7 @@ apl = Apl()
 apl('3 3⍴⍳9')
 ```
 
-<pre class="aplnb_out">1 2 3
+<pre class="aplnb_out sax2">1 2 3
 4 5 6
 7 8 9</pre>
 

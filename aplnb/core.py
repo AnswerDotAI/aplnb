@@ -155,7 +155,7 @@ def run(self:Apl, code):
 class AplOut(str):
     "Output text from an `Apl` call; displays verbatim, in the SAX2 APL font where HTML is available"
     def __repr__(self): return str(self)
-    def _repr_html_(self): return f'<pre class="aplnb_out">{html.escape(self.rstrip(chr(10)))}</pre>'
+    def _repr_html_(self): return f'<pre class="aplnb_out sax2">{html.escape(self.rstrip(chr(10)))}</pre>'
 
 @patch
 def __call__(self:Apl, code):
@@ -200,7 +200,7 @@ def __exit__(self:Apl, *args): self.close()
 # %% ../00_core.ipynb #04f56c87
 _css = """<style>
 @font-face { font-family:'SAX2'; src: local('SAX2'), url('https://cdn.jsdelivr.net/gh/abrudz/SAX2@master/SAX2.ttf') format('truetype') }
-.aplnb_out { font-family:'SAX2',monospace; line-height:1.05 }
+.sax2 { font-family:'SAX2',monospace !important; line-height:1.05 !important }
 </style>"""
 
 class APLMagic:
