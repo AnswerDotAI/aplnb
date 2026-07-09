@@ -9,12 +9,12 @@ __all__ = ['find_dyalog', 'start_dyalog', 'ride_send', 'ride_recv', 'AplError', 
            'APLMagic', 'create_magic', 'load_ipython_extension', 'create_ipython_config']
 
 # %% ../00_core.ipynb #fe6dcafd
-import atexit,json,socket,subprocess
+import atexit,html,json,socket,subprocess
 from shutil import which
 from importlib.resources import files
 from fastcore.utils import *
 from fastcore.test import *
-from IPython.display import display, Javascript
+from IPython.display import display, Javascript, HTML
 from IPython.paths import get_ipython_dir
 from IPython.utils.capture import capture_output
 
@@ -153,13 +153,15 @@ def run(self:Apl, code):
 
 # %% ../00_core.ipynb #07eae6b5
 class AplOut(str):
-    "Output text from an `Apl` call, displayed verbatim in notebooks"
+    "Output text from an `Apl` call; displays verbatim, in the SAX2 APL font where HTML is available"
     def __repr__(self): return str(self)
+    def _repr_html_(self): return f'<pre class="aplnb_out">{html.escape(self.rstrip(chr(10)))}</pre>'
 
 @patch
 def __call__(self:Apl, code):
     "Run `code`, returning session output (or None if there is none)"
     return AplOut(self.run(code)) or None
+
 
 # %% ../00_core.ipynb #a82d16ca
 @patch
@@ -196,6 +198,11 @@ def __enter__(self:Apl): return self
 def __exit__(self:Apl, *args): self.close()
 
 # %% ../00_core.ipynb #04f56c87
+_css = """<style>
+@font-face { font-family:'SAX2'; src: local('SAX2'), url('https://cdn.jsdelivr.net/gh/abrudz/SAX2@master/SAX2.ttf') format('truetype') }
+.aplnb_out { font-family:'SAX2',monospace; line-height:1.05 }
+</style>"""
+
 class APLMagic:
     def __init__(self, dyalog=None): self.dyalog,self.o,self._loaded = dyalog,None,False
 
@@ -203,12 +210,13 @@ class APLMagic:
         if not self.o: self.o = Apl(self.dyalog)
         if not self._loaded:
             display(Javascript((files('aplnb')/'lb.js').read_text()))
+            display(HTML(_css))
             self._loaded = True
         if cell is None: return self.o[line.split('⍝')[0].strip()]
         disp,cell = True,cell.rstrip()
         if cell.endswith(';'): disp,cell = False,cell[:-1]
         out = self.o(cell)
-        if disp and out: print(out, end='')
+        if disp and out: display(out)
 
 
 # %% ../00_core.ipynb #953c6348
