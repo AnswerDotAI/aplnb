@@ -5,14 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "aplnb"
 dynamic = ["version"]
-description = "AI magic"
+description = "APL magics for Jupyter and IPython, driving Dyalog over the RIDE protocol"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 license = {text = "Apache-2.0"}
 authors = [{name = "Jeremy Howard", email = "info@answer.ai"}]
 keywords = ['nbdev', 'jupyter', 'notebook', 'python', 'apl', 'dyalog']
 classifiers = ["Natural Language :: English", "Intended Audience :: Developers", "Development Status :: 3 - Alpha", "Programming Language :: Python :: 3", "Programming Language :: Python :: 3 :: Only"]
-dependencies = ['fastcore', 'pynapl-dyalog']
+dependencies = ['fastcore']
 
 [project.urls]
 Repository = "https://github.com/answerdotai/aplnb"
