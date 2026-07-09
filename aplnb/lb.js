@@ -121,7 +121,7 @@
 		if (nn !== 'textarea' && (nn !== 'input' || t0.type !== 'text' && t0.type !== 'search')) return
 		t = t0; if (!t.ngn) { t.ngn = 1; ev(t, 'keydown', fk) }
 	}
-	let upd = _ => { d.body.style.marginTop = ovl ? '' : lb.clientHeight + 'px' }
+	let upd = _ => { d.body.style.paddingTop = ovl ? '' : lb.clientHeight + 'px' }
 	upd(); (window.ResizeObserver ? new ResizeObserver(upd).observe(lb) : ev(window, 'resize', upd))
 	ev(d, 'focus', ff, !0); let ae = d.activeElement; ae && ff({ type: 'focus', target: ae })
 	ev(d, 'keydown', x => { if (!x.target.ngn && x.target.closest?.('.monaco-editor')) fk(x) }, !0) //EditContext-mode Monaco has no textarea for ff to register
