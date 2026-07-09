@@ -2,9 +2,10 @@
 // MIT License, Copyright (c) 2011-2020 Nikolay G. Nikolov and Adam Brudzevski. This is a modified copy bundled with aplnb.
 // Changes from upstream: double backtick composes ```; insertion via insertText so undo and input events work;
 // Monaco editor support (incl. EditContext mode); dark mode; overlay/push-down toggle persisted per site;
-// idempotent injection; ResizeObserver-driven layout; @font-face with dead url() removed.
+// idempotent injection; ResizeObserver-driven layout; @font-face with dead url() removed; skipped on quarto-rendered pages.
 ; (_ => {
 	if (document.querySelector('.ngn_lb')) return
+	if (document.querySelector('meta[name=generator][content^=quarto]')) return //no bar on rendered docs pages
 	let hc = { '<': '&lt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }, he = x => x.replace(/[<&'"]/g, c => hc[c]) //html chars and escape fn
 		, tcs = '<-←xx×/\\×:-÷*O⍟[-⌹-]⌹OO○77⌈FF⌈ll⌊LL⌊T_⌶II⌶|_⊥TT⊤-|⊣|-⊢=/≠L-≠<=≤<_≤>=≥>_≥==≡=_≡7=≢Z-≢vv∨^^∧^~⍲v~⍱^|↑v|↓((⊂cc⊂(_⊆c_⊆))⊃[|⌷|]⌷A|⍋V|⍒ii⍳i_⍸ee∊e_⍷' +
 			'uu∪UU∪nn∩/-⌿\\-⍀,-⍪rr⍴pp⍴O|⌽O-⊖O\\⍉::¨""¨~:⍨~"⍨*:⍣*"⍣oo∘o:⍤o"⍤O:⍥O"⍥[\'⍞\']⍞[]⎕[:⍠:]⍠[=⌸=]⌸[<⌺>]⌺o_⍎oT⍕o-⍕<>⋄^v⋄on⍝->→aa⍺ww⍵VV∇v-∇--¯0~⍬' +

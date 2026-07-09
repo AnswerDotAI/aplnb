@@ -39,7 +39,7 @@ def start_dyalog(
     lsn = socket.create_server(('127.0.0.1', 0))
     port = lsn.getsockname()[1]
     env = os.environ | dict(RIDE_INIT=f'CONNECT:127.0.0.1:{port}', RIDE_SPAWNED='1',
-        APLCORENAME=os.environ.get('APLCORENAME','0'),
+        MAXAPLCORES=os.environ.get('MAXAPLCORES','0'),
         DYALOGQUIETUCMDBUILD='1', DYALOG_LINEEDITOR_MODE='1', ENABLE_CEF='0', LOG_FILE_INUSE='0')
     dn = subprocess.DEVNULL
     proc = subprocess.Popen([dyalog], env=env, stdin=dn, stdout=dn, stderr=dn)
@@ -75,7 +75,7 @@ def ride_recv(sock):
 
 
 # %% ../00_core.ipynb #8b0cdcfc
-class AplError(Exception): pass
+class AplError(Exception): "An APL error, carrying the session's error display as its message"
 
 class AplPrompt(Exception):
     "The session stopped at a non-ready prompt: 2=⎕ input, 3=incomplete input, 4=⍞ input"
@@ -204,9 +204,11 @@ _css = """<style>
 </style>"""
 
 class APLMagic:
+    "IPython `%apl`/`%%apl` magics, driving a lazily-started `Apl` session"
     def __init__(self, dyalog=None): self.dyalog,self.o,self._loaded = dyalog,None,False
 
     def apl(self, line, cell=None):
+        "Run APL: a cell magic displays the session output; a line magic returns the expression's Python value"
         if not self.o: self.o = Apl(self.dyalog)
         if not self._loaded:
             display(Javascript((files('aplnb')/'lb.js').read_text()))
@@ -221,6 +223,7 @@ class APLMagic:
 
 # %% ../00_core.ipynb #953c6348
 def create_magic(shell=None):
+    "Create an `APLMagic` and register its `apl` line/cell magic with `shell`, returning it"
     if not shell: shell = get_ipython()
     apl_magic = APLMagic()
     shell.register_magic_function(apl_magic.apl, 'line_cell', 'apl')
