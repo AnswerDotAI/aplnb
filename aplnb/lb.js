@@ -126,3 +126,4 @@
 	ev(d, 'focus', ff, !0); let ae = d.activeElement; ae && ff({ type: 'focus', target: ae })
 	ev(d, 'keydown', x => { if (!x.target.ngn && x.target.closest?.('.monaco-editor')) fk(x) }, !0) //EditContext-mode Monaco has no textarea for ff to register
 })();
+
