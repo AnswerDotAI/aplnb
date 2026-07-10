@@ -2,14 +2,12 @@
 
 <!-- do not remove -->
 
-## 0.1.1
+## 0.2.0
 
 ### New Features
 
 - Rename aplnb to iversonnb and add J language support via libj ([#8](https://github.com/AnswerDotAI/iversonnb/issues/8))
-
 - Add `aplkernel` clikernel/MCP worker for persistent APL sessions, and track interpreter resets via `AplError.reset` with socket timeout lifted after startup ([#7](https://github.com/AnswerDotAI/iversonnb/issues/7))
-
 
 
 ## 0.1.0
