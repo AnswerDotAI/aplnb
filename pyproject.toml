@@ -3,35 +3,37 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "aplnb"
+name = "iversonnb"
 dynamic = ["version"]
-description = "APL magics for Jupyter and IPython, driving Dyalog over the RIDE protocol"
+description = "APL and J in notebooks: Iverson-language magics and kernels for Jupyter, IPython, and LLM agents"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "Apache-2.0"}
 authors = [{name = "Jeremy Howard", email = "info@answer.ai"}]
-keywords = ['nbdev', 'jupyter', 'notebook', 'python', 'apl', 'dyalog']
+keywords = ['nbdev', 'jupyter', 'notebook', 'python', 'apl', 'dyalog', 'j', 'jsoftware']
 classifiers = ["Natural Language :: English", "Intended Audience :: Developers", "Development Status :: 3 - Alpha", "Programming Language :: Python :: 3", "Programming Language :: Python :: 3 :: Only"]
 dependencies = ['fastcore','clikernel>=0.1.6']
 
 [project.urls]
-Repository = "https://github.com/answerdotai/aplnb"
-Documentation = "https://answerdotai.github.io/aplnb"
+Repository = "https://github.com/answerdotai/iversonnb"
+Documentation = "https://answerdotai.github.io/iversonnb"
 
 [project.entry-points.nbdev]
-aplnb = "aplnb._modidx:d"
+iversonnb = "iversonnb._modidx:d"
 
 
 [project.scripts]
-aplnb_install = "aplnb:create_ipython_config"
-aplkernel = "aplnb.kernel:main"
-aplkernel-mcp = "aplnb.kernel:main_mcp"
+iversonnb_install = "iversonnb:create_ipython_config"
+aplkernel = "iversonnb.kernel:main"
+aplkernel-mcp = "iversonnb.kernel:main_mcp"
+jkernel = "iversonnb.jkernel:main"
+jkernel-mcp = "iversonnb.jkernel:main_mcp"
 
 [tool.setuptools.dynamic]
-version = {attr = "aplnb.__version__"}
+version = {attr = "iversonnb.__version__"}
 
 [tool.setuptools.packages.find]
-include = ["aplnb"]
+include = ["iversonnb"]
 
 [tool.nbdev]
 nbs_path = '.'

@@ -103,8 +103,8 @@ def test_kernel(tmp_path):
 def test_startup_apl(tmp_path):
     "startup.apl runs in the session before the first request, and its source and output appear in the banner."
     xdg = tmp_path/"xdg"
-    (xdg/"aplnb").mkdir(parents=True)
-    (xdg/"aplnb"/"startup.apl").write_text("greeting←'hi from startup'\n⎕←'STARTUP-MARKER'\n")
+    (xdg/"iversonnb").mkdir(parents=True)
+    (xdg/"iversonnb"/"startup.apl").write_text("greeting←'hi from startup'\n⎕←'STARTUP-MARKER'\n")
     proc = start_kernel(tmp_path)
     try:
         body, _ = read_until_ready(proc)

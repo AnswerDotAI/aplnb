@@ -2,7 +2,7 @@
 import signal,sys,traceback
 from fastcore.xdg import xdg_config_home
 from clikernel.base import fmt_error,init_worker,run_mcp,run_startup,serve_stream
-from aplnb.core import Apl,AplError,ride_send
+from iversonnb.core import Apl,AplError,ride_send
 
 INSTRUCTIONS = "aplkernel is a persistent Dyalog APL session: `execute` runs APL code and keeps workspace state (variables, functions) across calls; `restart` gives a clear workspace. If a response starts with a NOTE saying the session was replaced, all workspace state is gone."
 
@@ -46,11 +46,11 @@ def main():
         state['busy'] = True
         try: return _execute(apl, code)
         finally: state['busy'] = False
-    block = run_startup(xdg_config_home()/"aplnb"/"startup.apl", lambda src: (apl.run(src), None))
+    block = run_startup(xdg_config_home()/"iversonnb"/"startup.apl", lambda src: (apl.run(src), None))
     serve_stream(execute, INSTRUCTIONS + ("\n\n" + block if block else ""), should_exit=lambda: state['exit'])
 
 
-def main_mcp(): run_mcp([sys.executable, "-m", "aplnb.kernel"], name="aplkernel", docs=_DOCS, instructions=INSTRUCTIONS)
+def main_mcp(): run_mcp([sys.executable, "-m", "iversonnb.kernel"], name="aplkernel", docs=_DOCS, instructions=INSTRUCTIONS)
 
 
 if __name__ == "__main__": main()

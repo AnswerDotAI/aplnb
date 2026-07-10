@@ -1,5 +1,5 @@
 // APL language bar by Adám Brudzewsky: https://abrudz.github.io/lb (source: https://github.com/abrudz/lb)
-// MIT License, Copyright (c) 2011-2020 Nikolay G. Nikolov and Adam Brudzevski. This is a modified copy bundled with aplnb.
+// MIT License, Copyright (c) 2011-2020 Nikolay G. Nikolov and Adam Brudzevski. This is a modified copy bundled with iversonnb.
 // Changes from upstream: double backtick composes ```; insertion via insertText so undo and input events work;
 // Monaco editor support (incl. EditContext mode); dark mode; overlay/push-down toggle persisted per site;
 // idempotent injection; ResizeObserver-driven layout; @font-face with dead url() removed; skipped on quarto-rendered pages.
