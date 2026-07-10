@@ -50,7 +50,7 @@ def main():
     serve_stream(execute, INSTRUCTIONS + ("\n\n" + block if block else ""), should_exit=lambda: state['exit'])
 
 
-def main_mcp(): run_mcp([sys.executable, "-m", "aplnb.kernel"], name="aplkernel", docs=_DOCS)
+def main_mcp(): run_mcp([sys.executable, "-m", "aplnb.kernel"], name="aplkernel", docs=_DOCS, instructions=INSTRUCTIONS)
 
 
 if __name__ == "__main__": main()
