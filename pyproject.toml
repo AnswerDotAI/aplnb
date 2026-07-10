@@ -12,7 +12,7 @@ license = {text = "Apache-2.0"}
 authors = [{name = "Jeremy Howard", email = "info@answer.ai"}]
 keywords = ['nbdev', 'jupyter', 'notebook', 'python', 'apl', 'dyalog']
 classifiers = ["Natural Language :: English", "Intended Audience :: Developers", "Development Status :: 3 - Alpha", "Programming Language :: Python :: 3", "Programming Language :: Python :: 3 :: Only"]
-dependencies = ['fastcore']
+dependencies = ['fastcore','clikernel>=0.1.6']
 
 [project.urls]
 Repository = "https://github.com/answerdotai/aplnb"
@@ -24,6 +24,8 @@ aplnb = "aplnb._modidx:d"
 
 [project.scripts]
 aplnb_install = "aplnb:create_ipython_config"
+aplkernel = "aplnb.kernel:main"
+aplkernel-mcp = "aplnb.kernel:main_mcp"
 
 [tool.setuptools.dynamic]
 version = {attr = "aplnb.__version__"}
@@ -34,3 +36,7 @@ include = ["aplnb"]
 [tool.nbdev]
 nbs_path = '.'
 recursive = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"

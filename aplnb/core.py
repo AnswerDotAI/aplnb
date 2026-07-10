@@ -75,13 +75,18 @@ def ride_recv(sock):
 
 
 # %% ../00_core.ipynb #8b0cdcfc
-class AplError(Exception): "An APL error, carrying the session's error display as its message"
+class AplError(Exception):
+    "An APL error, carrying the session's error display as its message; `reset` means the interpreter was replaced and workspace state lost"
+    def __init__(self, msg, reset=False):
+        super().__init__(msg)
+        self.reset = reset
 
 class AplPrompt(Exception):
     "The session stopped at a non-ready prompt: 2=⎕ input, 3=incomplete input, 4=⍞ input"
     def __init__(self, ptype):
         super().__init__(f'prompt type {ptype}')
         self.ptype = ptype
+
 
 # %% ../00_core.ipynb #538b5ad9
 def ride_run(sock, code):
@@ -120,6 +125,7 @@ class Apl:
         while True:
             m,a = ride_recv(self.sock)
             if m=='SetPromptType' and a['type']==1: break
+        self.sock.settimeout(None)  # timeout guards startup only; run() waits as long as the code takes
 
 
 # %% ../00_core.ipynb #32eb4980
@@ -144,12 +150,13 @@ def run(self:Apl, code):
         if e.ptype in (2,4):
             ride_run(self.sock, '→' if e.ptype==2 else '')
             raise AplError('Input via ⎕ or ⍞ is not supported in aplnb') from None
-        print('Incomplete input wedged the Dyalog interpreter; started a fresh session (workspace lost). See Dyalog/ride#1401')
         self.close()
         self._connect()
-        raise AplError('Incomplete input') from None
+        raise AplError('Incomplete input wedged the Dyalog interpreter; started a fresh session (workspace lost). See Dyalog/ride#1401',
+            reset=True) from None
     if err: raise AplError(out)
     return out
+
 
 # %% ../00_core.ipynb #07eae6b5
 class AplOut(str):

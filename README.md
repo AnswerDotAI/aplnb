@@ -336,6 +336,21 @@ Sessions shut themselves down at process exit; use `close`, or a
 apl.close()
 ```
 
+## The APL clikernel
+
+aplnb also ships `aplkernel`, a persistent APL session for LLM agents,
+built on [clikernel](https://github.com/AnswerDotAI/clikernel)’s stream
+protocol. `aplkernel` runs the stdin/stdout worker directly, and
+`aplkernel-mcp` wraps it as an MCP server with `execute`, `restart`, and
+`interrupt` tools (interrupt isn’t supported yet). Workspace state
+persists across calls; send `)OFF` to stop the worker. If Dyalog has to
+be replaced mid-session (a crash, or the incomplete-input bug below),
+the response starts with a NOTE saying workspace state was lost.
+
+On startup the kernel runs `~/.config/aplnb/startup.apl` (if it exists)
+in the session, and reports its source and output in the banner, which
+`aplkernel-mcp` forwards as the server’s MCP instructions.
+
 ## Limitations
 
 - Keyboard input through `⎕` or `⍞` can’t work in a notebook, so it
@@ -343,8 +358,9 @@ apl.close()
 - A cell that ends inside an unfinished block, such as an unclosed
   `:If`, wedges the interpreter with no way back
   ([Dyalog/ride#1401](https://github.com/Dyalog/ride/issues/1401)).
-  aplnb detects this, tells you, and starts a fresh session, but
-  workspace state is lost when it happens.
+  aplnb detects this and starts a fresh session, raising an error that
+  says so (with `reset` set on it), but workspace state is lost when it
+  happens.
 - `%apl` transfers values with `⎕JSON`, so it’s limited to arrays and
   scalars that JSON can represent, serializing to at most 32767
   characters. For bigger data, write a file from APL instead.
