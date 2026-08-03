@@ -2,8 +2,8 @@ project:
   output-dir: _docs
 
 website:
-  title: "iversonnb"
-  site-url: "https://answerdotai.github.io/iversonnb"
-  description: "APL and J in notebooks: Iverson-language magics and kernels for Jupyter, IPython, and LLM agents"
+  title: "aplnb"
+  site-url: "https://answerdotai.github.io/aplnb"
+  description: "Dyalog APL in notebooks, with apl magics for Jupyter and IPython"
   repo-branch: main
-  repo-url: "https://github.com/answerdotai/iversonnb"
+  repo-url: "https://github.com/answerdotai/aplnb"
