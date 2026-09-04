@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Driving Dyalog APL over the RIDE protocol, and apl magics for Jupyter and IPython">
+
+<title>aplnb core – aplnb</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js" integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2" crossorigin="anonymous"></script><script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-d63a2c9c8df14b07662b36303925c8cc.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="https://cdn.jsdelivr.net/npm/requirejs@2.3.6/require.min.js" integrity="sha384-c9c+LnTbwQ3aujuU7ULEPVvgLs+Fn6fJUvIGTsuu1ZcCf11fiEubah0ttpca4ntM sha384-6V1/AdqZRWk1KAlWbKBlGhN7VG4iE/yAZcO6NZPMF8od0vukrvr0tg4qY6NSrItx" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="aplnb core – aplnb">
+<meta property="og:description" content="Driving Dyalog APL over the RIDE protocol, and apl magics for Jupyter and IPython">
+<meta property="og:site_name" content="aplnb">
+<meta name="twitter:title" content="aplnb core – aplnb">
+<meta name="twitter:description" content="Driving Dyalog APL over the RIDE protocol, and apl magics for Jupyter and IPython">
+<meta name="twitter:card" content="summary">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">aplnb</span>
+    </a>
+  </div>
+        <div class="quarto-navbar-tools tools-end">
+</div>
+          <div id="quarto-search" class="" title="Search"></div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./core.html">aplnb core</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">aplnb</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./core.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">aplnb core</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#finding-and-starting-dyalog" id="toc-finding-and-starting-dyalog" class="nav-link active" data-scroll-target="#finding-and-starting-dyalog">Finding and starting Dyalog</a></li>
+  <li><a href="#message-framing" id="toc-message-framing" class="nav-link" data-scroll-target="#message-framing">Message framing</a></li>
+  <li><a href="#executing-code" id="toc-executing-code" class="nav-link" data-scroll-target="#executing-code">Executing code</a></li>
+  <li><a href="#multi-line-input" id="toc-multi-line-input" class="nav-link" data-scroll-target="#multi-line-input">Multi-line input</a></li>
+  <li><a href="#a-session-object" id="toc-a-session-object" class="nav-link" data-scroll-target="#a-session-object">A session object</a></li>
+  <li><a href="#getting-values-into-python" id="toc-getting-values-into-python" class="nav-link" data-scroll-target="#getting-values-into-python">Getting values into Python</a></li>
+  <li><a href="#input-requests-and-incomplete-input" id="toc-input-requests-and-incomplete-input" class="nav-link" data-scroll-target="#input-requests-and-incomplete-input">Input requests and incomplete input</a></li>
+  <li><a href="#the-apl-magics" id="toc-the-apl-magics" class="nav-link" data-scroll-target="#the-apl-magics">The <code>apl</code> magics</a></li>
+  <li><a href="#cleanup" id="toc-cleanup" class="nav-link" data-scroll-target="#cleanup">Cleanup</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/answerdotai/aplnb/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div><div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="core.html.md"><i class="bi bi-file-code"></i>Markdown</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">aplnb core</h1>
+</div>
+
+<div>
+  <div class="description">
+    Driving Dyalog APL over the RIDE protocol, and <code>apl</code> magics for Jupyter and IPython
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<p>aplnb talks to Dyalog using the <a href="https://github.com/Dyalog/ride/blob/master/docs/protocol.md">RIDE protocol</a>, the same TCP protocol used by Dyalog’s own IDE and by the official <a href="https://github.com/Dyalog/dyalog-jupyter-kernel">Jupyter kernel</a>. Any Dyalog interpreter can serve it, nothing extra needs to be loaded into the workspace, and the message framing tells us exactly when output ends, whether it was an error, and when the interpreter is ready for more. This notebook builds up the client one step at a time, showing what actually goes over the wire.</p>
+<section id="finding-and-starting-dyalog" class="level2">
+<h2 class="anchored" data-anchor-id="finding-and-starting-dyalog">Finding and starting Dyalog</h2>
+<div id="c87a24af" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-04T04:54:50.628136+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-04T04:54:50.681740+00:00&quot;,&quot;total&quot;:0.05360850399999606}}" data-execution_count="3">
+<hr>
+<p><a href="https://github.com/answerdotai/aplnb/blob/main/aplnb/core.py#L22" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="find_dyalog" class="level3">
+<h3 class="anchored" data-anchor-id="find_dyalog">find_dyalog</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> find_dyalog():</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Locate the Dyalog interpreter binary</em></p>
+</section>
+</div>
+<p>On macOS the installer symlinks the interpreter into <code>/usr/local/bin</code>, so <code>which</code> normally finds it. The fallbacks scan the standard install locations on macOS and Linux.</p>
+<div id="395cfd54" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>find_dyalog()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>'/usr/local/bin/dyalog'</code></pre>
+</div>
+</div>
+<p>RIDE connections can go in either direction. Dyalog’s Jupyter kernel uses <code>RIDE_INIT=SERVE:*:port</code>, where the interpreter listens and the client polls until the port opens, which means guessing a free port and racing to connect. <code>CONNECT</code> mode reverses the roles: we listen on a port the OS just gave us, tell the interpreter to dial back, and <code>accept()</code> blocks until it does. No race, no polling. <code>RIDE_SPAWNED=1</code> tells the interpreter it belongs to this connection, so it exits when the connection drops.</p>
+<div id="ff093c28" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-04T04:54:50.683201+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-04T04:54:50.685595+00:00&quot;,&quot;total&quot;:0.002395806999999195}}" data-execution_count="5">
+<hr>
+<p><a href="https://github.com/answerdotai/aplnb/blob/main/aplnb/core.py#L32" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="start_dyalog" class="level3">
+<h3 class="anchored" data-anchor-id="start_dyalog">start_dyalog</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> start_dyalog(</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    dyalog:NoneType<span class="op">=</span><span class="va">None</span>, <span class="co"># Path to the interpreter binary; `find_dyalog()` result if None</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    timeout:<span class="bu">int</span><span class="op">=</span><span class="dv">10</span>, <span class="co"># Socket timeout (secs), so a client bug can never hang the caller</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Spawn a Dyalog interpreter that connects back to us over RIDE; return <code>(socket,Popen)</code></em></p>
+</section>
+</div>
+<div id="471c4398" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>sock,proc <span class="op">=</span> start_dyalog()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="message-framing" class="level2">
+<h2 class="anchored" data-anchor-id="message-framing">Message framing</h2>
+<p>The interpreter speaks first. Here are the raw bytes:</p>
+<div id="db6035c6" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>raw <span class="op">=</span> sock.recv(<span class="dv">64</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>raw</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>b'\x00\x00\x00\x1cRIDESupportedProtocols=2'</code></pre>
+</div>
+</div>
+<p>Every message is framed as a 4-byte big-endian total length, the literal <code>RIDE</code>, then a UTF-8 payload. Here <code>0x1c</code> is 28: 4 length bytes, 4 for <code>RIDE</code>, and the 20 characters of <code>SupportedProtocols=2</code>. The first two messages in each direction are plain strings negotiating the protocol version; every payload after that is JSON, a 2-element array of command name and arguments. One quirk: the interpreter sometimes sends raw control characters inside JSON strings, which strict parsers reject, so <a href="https://answerdotai.github.io/aplnb/core.html#ride_recv"><code>ride_recv</code></a> escapes them before decoding (the official Jupyter kernel does the same).</p>
+<div id="1e3991e0" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-04T04:54:50.687340+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-04T04:54:50.689353+00:00&quot;,&quot;total&quot;:0.0020146589999967546}}" data-execution_count="7">
+<hr>
+<p><a href="https://github.com/answerdotai/aplnb/blob/main/aplnb/core.py#L66" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="ride_recv" class="level3">
+<h3 class="anchored" data-anchor-id="ride_recv">ride_recv</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> ride_recv(</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    sock</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Receive one RIDE message, JSON-decoded unless it’s a handshake string</em></p>
+</section>
+</div>
+<div id="3535c3f8" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-04T04:54:50.689421+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-04T04:54:50.691322+00:00&quot;,&quot;total&quot;:0.0019038730000033866}}" data-execution_count="8">
+<hr>
+<p><a href="https://github.com/answerdotai/aplnb/blob/main/aplnb/core.py#L51" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="ride_send" class="level3">
+<h3 class="anchored" data-anchor-id="ride_send">ride_send</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> ride_send(</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    sock, msg</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Send one RIDE message: a handshake <code>str</code>, or a <code>[cmd,args]</code> list sent as JSON</em></p>
+</section>
+</div>
+<p>The handshake is symmetric: each side sends <code>SupportedProtocols=2</code> and <code>UsingProtocol=2</code>, then we identify ourselves and the interpreter replies with its details:</p>
+<div id="45b268fb" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>ride_send(sock, <span class="st">'SupportedProtocols=2'</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>ride_send(sock, <span class="st">'UsingProtocol=2'</span>)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>ride_recv(sock)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>'UsingProtocol=2'</code></pre>
+</div>
+</div>
+<div id="db0b472f" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>ride_send(sock, [<span class="st">'Identify'</span>,{<span class="st">'apiVersion'</span>:<span class="dv">1</span>,<span class="st">'identity'</span>:<span class="dv">1</span>}])</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>info <span class="op">=</span> ride_recv(sock)[<span class="dv">1</span>]</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>{k:info[k] <span class="cf">for</span> k <span class="kw">in</span> (<span class="st">'Vendor'</span>,<span class="st">'Language'</span>,<span class="st">'version'</span>,<span class="st">'arch'</span>,<span class="st">'platform'</span>)}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>{'Vendor': 'Dyalog Limited',
+ 'Language': 'APL',
+ 'version': '20.0.53963',
+ 'arch': 'Unicode/64',
+ 'platform': 'Mac-64'}</code></pre>
+</div>
+</div>
+<p>The interpreter then sends a series of status messages on its own. <code>SetPromptType</code> with <code>type</code> 1 means the session is ready for input, so read until that arrives:</p>
+<div id="453b518c" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>msgs <span class="op">=</span> []</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span> <span class="va">True</span>:</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    m <span class="op">=</span> ride_recv(sock)</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    msgs.append(m)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> m[<span class="dv">0</span>]<span class="op">==</span><span class="st">'SetPromptType'</span> <span class="kw">and</span> m[<span class="dv">1</span>][<span class="st">'type'</span>]<span class="op">==</span><span class="dv">1</span>: <span class="cf">break</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>msgs</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>[['UpdateDisplayName', {'displayName': 'CLEAR WS'}],
+ ['SetPromptType', {'type': 1}]]</code></pre>
+</div>
+</div>
+</section>
+<section id="executing-code" class="level2">
+<h2 class="anchored" data-anchor-id="executing-code">Executing code</h2>
+<p><code>Execute</code> takes a line of session input (the trailing newline is required). The interpreter echoes the input, streams back session output as <code>AppendSessionOutput</code> messages, and finally sends <code>SetPromptType</code> 1 to say it’s ready for the next line. That final message is what makes RIDE reliable to drive: there’s never a question of whether output has finished.</p>
+<div id="376d798e" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>ride_send(sock, [<span class="st">'Execute'</span>,{<span class="st">'text'</span>:<span class="st">'3×⍳4</span><span class="ch">\n</span><span class="st">'</span>,<span class="st">'trace'</span>:<span class="dv">0</span>}])</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>msgs <span class="op">=</span> []</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span> <span class="va">True</span>:</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    m <span class="op">=</span> ride_recv(sock)</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    msgs.append(m)</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> m[<span class="dv">0</span>]<span class="op">==</span><span class="st">'SetPromptType'</span> <span class="kw">and</span> m[<span class="dv">1</span>][<span class="st">'type'</span>]<span class="op">==</span><span class="dv">1</span>: <span class="cf">break</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>msgs</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>[['UpdateSessionCaption', {'text': 'CLEAR WS - Dyalog APL'}],
+ ['AppendSessionOutput', {'result': '3×⍳4\n', 'type': 14, 'group': 0}],
+ ['SetPromptType', {'type': 0}],
+ ['AppendSessionOutput', {'result': '3 6 9 12\n', 'type': 2, 'group': 0}],
+ ['SetPromptType', {'type': 1}]]</code></pre>
+</div>
+</div>
+<p>The <code>type</code> field distinguishes kinds of output: 14 is the echo of our own input (clients normally drop it), and the rest are genuine session output. Errors are flagged out-of-band with a <code>HadError</code> message, so there’s no scraping of output text to detect failure:</p>
+<div id="e8cde8f4" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>ride_send(sock, [<span class="st">'Execute'</span>,{<span class="st">'text'</span>:<span class="st">'1÷0</span><span class="ch">\n</span><span class="st">'</span>,<span class="st">'trace'</span>:<span class="dv">0</span>}])</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>msgs <span class="op">=</span> []</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span> <span class="va">True</span>:</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    m <span class="op">=</span> ride_recv(sock)</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    msgs.append(m)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> m[<span class="dv">0</span>]<span class="op">==</span><span class="st">'SetPromptType'</span> <span class="kw">and</span> m[<span class="dv">1</span>][<span class="st">'type'</span>]<span class="op">==</span><span class="dv">1</span>: <span class="cf">break</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>msgs</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>[['AppendSessionOutput', {'result': '1÷0\n', 'type': 14, 'group': 0}],
+ ['SetPromptType', {'type': 0}],
+ ['HadError', {'error': 11, 'dmx': 1}],
+ ['AppendSessionOutput',
+  {'result': 'DOMAIN ERROR: Divide by zero\n', 'type': 5, 'group': 0}],
+ ['AppendSessionOutput', {'result': '      1÷0\n', 'type': 5, 'group': 0}],
+ ['AppendSessionOutput', {'result': '       ∧\n', 'type': 5, 'group': 0}],
+ ['SetPromptType', {'type': 1}]]</code></pre>
+</div>
+</div>
+<p>APL errors and unusual prompt states get their own exceptions: <a href="https://answerdotai.github.io/aplnb/core.html#aplerror"><code>AplError</code></a> for ordinary APL errors (carrying the session’s error display, plus a <code>reset</code> flag for when the interpreter had to be replaced), and <a href="https://answerdotai.github.io/aplnb/core.html#aplprompt"><code>AplPrompt</code></a>, used internally when the session stops at a prompt other than ready.</p>
+<div id="359a9b10" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-04T04:54:50.692933+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-04T04:54:50.694769+00:00&quot;,&quot;total&quot;:0.001838414000005173}}" data-execution_count="10">
+<hr>
+<p><a href="https://github.com/answerdotai/aplnb/blob/main/aplnb/core.py#L82" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="aplprompt" class="level3">
+<h3 class="anchored" data-anchor-id="aplprompt">AplPrompt</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> AplPrompt(</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>    ptype</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>The session stopped at a non-ready prompt: 2=⎕ input, 3=incomplete input, 4=⍞ input</em></p>
+</section>
+</div>
+<div id="55641c70" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-04T04:54:50.694837+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-04T04:54:50.696638+00:00&quot;,&quot;total&quot;:0.0018036019999954078}}" data-execution_count="11">
+<hr>
+<p><a href="https://github.com/answerdotai/aplnb/blob/main/aplnb/core.py#L76" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="aplerror" class="level3">
+<h3 class="anchored" data-anchor-id="aplerror">AplError</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> AplError(</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>    msg, reset:<span class="bu">bool</span><span class="op">=</span><span class="va">False</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>An APL error, carrying the session’s error display as its message; <code>reset</code> means the interpreter was replaced and workspace state lost</em></p>
+</section>
+</div>
+<p><a href="https://answerdotai.github.io/aplnb/core.html#ride_run"><code>ride_run</code></a> wraps the whole exchange: normalize the code to non-blank lines, send them all as one <code>Execute</code>, drop the echoes and prompt strings, collect everything else, and return the output plus the error number (0 if none) once the session is ready again. The echo counting is the subtle part: each input line is echoed back as a type 14 message, and a prompt change only counts as final once every line we sent has been echoed.</p>
+<div id="5cc541da" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-04T04:54:50.697876+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-04T04:54:50.700123+00:00&quot;,&quot;total&quot;:0.002249632999991036}}" data-execution_count="13">
+<hr>
+<p><a href="https://github.com/answerdotai/aplnb/blob/main/aplnb/core.py#L90" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="ride_run" class="level3">
+<h3 class="anchored" data-anchor-id="ride_run">ride_run</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> ride_run(</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>    sock, code</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Run one or more lines of APL in the session; return <code>(output,errno)</code> once the session is ready again</em></p>
+</section>
+</div>
+</section>
+<section id="multi-line-input" class="level2">
+<h2 class="anchored" data-anchor-id="multi-line-input">Multi-line input</h2>
+<p>Since 20.0 the session has multiline input on by default, so a complete block construct can go in a single <code>Execute</code>. The interpreter echoes each line as it consumes it, switches the prompt to type 3 while a block is open, then runs the block once it’s complete. This is why <a href="https://answerdotai.github.io/aplnb/core.html#ride_run"><code>ride_run</code></a> counts echoes: a type 3 prompt seen before all our input has been echoed just means “still reading the block”, while one seen after means the input really was incomplete. (One thing to avoid: sending a fresh <code>Execute</code> message while the prompt is type 3 crashes the interpreter, so a batch of lines must go in one message.)</p>
+<div id="4c56afcf" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>ride_run(sock, <span class="st">'''</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="st">:If 1</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="st">    ⎕←6×7</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="st">:EndIf'''</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>('42\n', 0)</code></pre>
+</div>
+</div>
+<p>Plain multi-statement input works the same way, and session state persists across calls:</p>
+<div id="0b8e6568" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>test_eq(ride_run(sock, <span class="st">'x←⍳3</span><span class="ch">\n</span><span class="st">z←x×x</span><span class="ch">\n</span><span class="st">⎕←z'</span>), (<span class="st">'1 4 9</span><span class="ch">\n</span><span class="st">'</span>, <span class="dv">0</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Errors come back with the <code>HadError</code> number and the session error display:</p>
+<div id="9b9cdf56" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>out,err <span class="op">=</span> ride_run(sock, <span class="st">'1÷0'</span>)</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(out)</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>test_eq(err, <span class="dv">11</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>DOMAIN ERROR: Divide by zero
+      1÷0
+       ∧
+</code></pre>
+</div>
+</div>
+</section>
+<section id="a-session-object" class="level2">
+<h2 class="anchored" data-anchor-id="a-session-object">A session object</h2>
+<p><a href="https://answerdotai.github.io/aplnb/core.html#apl"><code>Apl</code></a> packages all of the above: spawn the interpreter, shake hands, identify, widen the print width so long results aren’t wrapped (the same 32767 the official kernel uses), and wait for the first ready prompt.</p>
+<div id="e155079c" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-04T04:54:50.701685+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-04T04:54:50.703476+00:00&quot;,&quot;total&quot;:0.0017939969999929417}}" data-execution_count="15">
+<hr>
+<p><a href="https://github.com/answerdotai/aplnb/blob/main/aplnb/core.py#L107" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="apl" class="level3">
+<h3 class="anchored" data-anchor-id="apl">Apl</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> Apl(</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>    dyalog:NoneType<span class="op">=</span><span class="va">None</span>, timeout:<span class="bu">int</span><span class="op">=</span><span class="dv">10</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>A Dyalog APL session over the RIDE protocol</em></p>
+</section>
+</div>
+<p><code>close</code> asks the interpreter to exit with an <code>Exit</code> message, then falls back to killing the process: a wedged interpreter ignores both <code>Exit</code> and SIGTERM. The interpreter doesn’t exit just because the connection drops, so <code>_connect</code> registers <code>close</code> to run at process exit; without that, every notebook kernel restart would leak a dyalog process.</p>
+<div id="1125fc53" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-04T04:54:50.704384+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-04T04:54:50.706307+00:00&quot;,&quot;total&quot;:0.0019251049999979841}}" data-execution_count="17">
+<hr>
+<p><a href="https://github.com/answerdotai/aplnb/blob/main/aplnb/core.py#L131" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="apl.close" class="level3">
+<h3 class="anchored" data-anchor-id="apl.close">Apl.close</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> close():</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Shut down the interpreter and close the connection</em></p>
+</section>
+</div>
+<div id="4d3b1e95" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>apl <span class="op">=</span> Apl()</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>apl.info[<span class="st">'version'</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>'20.0.53963'</code></pre>
+</div>
+</div>
+<p><code>run</code> sends the code and interprets what comes back. APL errors raise <a href="https://answerdotai.github.io/aplnb/core.html#aplerror"><code>AplError</code></a> with the session’s error display. A <code>⎕</code> or <code>⍞</code> input request is cancelled (the session survives) and raises. Incomplete input, such as an unclosed <code>:If</code>, is the nasty case: it wedges the interpreter beyond recovery (<a href="https://github.com/Dyalog/ride/issues/1401">Dyalog/ride#1401</a>), so the only honest move is to replace the interpreter with a fresh one and raise with <code>reset</code> set, so callers know workspace state was lost.</p>
+<div id="0524fda4" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-04T04:54:50.707400+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-04T04:54:50.709457+00:00&quot;,&quot;total&quot;:0.002059066000001053}}" data-execution_count="19">
+<hr>
+<p><a href="https://github.com/answerdotai/aplnb/blob/main/aplnb/core.py#L144" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="apl.run" class="level3">
+<h3 class="anchored" data-anchor-id="apl.run">Apl.run</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> run(</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>    code</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Run <code>code</code> in the session, returning its output; raises <a href="https://answerdotai.github.io/aplnb/core.html#aplerror"><code>AplError</code></a> on APL errors</em></p>
+</section>
+</div>
+<div id="cac66626" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(apl.run(<span class="st">'m←2 3⍴⍳6</span><span class="ch">\n</span><span class="st">⎕←m'</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>1 2 3
+4 5 6
+</code></pre>
+</div>
+</div>
+<p>Output comes back exactly as the session formats it, so matrices look like APL. State persists for the life of the session, and errors raise <a href="https://answerdotai.github.io/aplnb/core.html#aplerror"><code>AplError</code></a> carrying the session’s error display:</p>
+<div id="305e0f6e" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>test_eq(apl.run(<span class="st">'+/,m'</span>), <span class="st">'21</span><span class="ch">\n</span><span class="st">'</span>)</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>test_fail(<span class="kw">lambda</span>: apl.run(<span class="st">'m+</span><span class="ch">\'</span><span class="st">x</span><span class="ch">\'</span><span class="st">'</span>), contains<span class="op">=</span><span class="st">'DOMAIN ERROR'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Wrapping every use in <code>print(apl.run(...))</code> is clunky. Defining <code>__call__</code> lets us treat the session itself as a function, and giving the output a verbatim <code>__repr__</code> means bare expressions in a notebook display exactly as they do in a Dyalog session. <a href="https://answerdotai.github.io/aplnb/core.html#aplout"><code>AplOut</code></a> subclasses <code>str</code>, so results still compare, slice, and print like ordinary strings. A cell with no output returns None, so nothing displays at all:</p>
+<div id="e22f7e1d" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-04T04:54:50.710522+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-04T04:54:50.712266+00:00&quot;,&quot;total&quot;:0.0017463459999902398}}" data-execution_count="21">
+<hr>
+<p><a href="https://github.com/answerdotai/aplnb/blob/main/aplnb/core.py#L166" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="apl.__call__" class="level3">
+<h3 class="anchored" data-anchor-id="apl.__call__">Apl.__call__</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb36"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> <span class="fu">__call__</span>(</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>    code</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Run <code>code</code>, returning session output (or None if there is none)</em></p>
+</section>
+</div>
+<div id="94af27bb" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-04T04:54:50.712352+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-04T04:54:50.714068+00:00&quot;,&quot;total&quot;:0.0017176030000030096}}" data-execution_count="22">
+<hr>
+<p><a href="https://github.com/answerdotai/aplnb/blob/main/aplnb/core.py#L160" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="aplout" class="level3">
+<h3 class="anchored" data-anchor-id="aplout">AplOut</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb37"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> AplOut(</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>args, <span class="op">**</span>kwargs</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Output text from an <a href="https://answerdotai.github.io/aplnb/core.html#apl"><code>Apl</code></a> call; displays verbatim, in the SAX2 APL font where HTML is available</em></p>
+</section>
+</div>
+<div id="8b0db322" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb38"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>apl(<span class="st">'m ∘.× ⍳4'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre class="aplnb_out sax2">1  2  3  4
+2  4  6  8
+3  6  9 12
+          
+4  8 12 16
+5 10 15 20
+6 12 18 24</pre>
+</div>
+</div>
+<div id="4a7ef602" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb39"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>test_eq(apl(<span class="st">'+/,m'</span>), <span class="st">'21</span><span class="ch">\n</span><span class="st">'</span>)</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>test_is(apl(<span class="st">'m2←m×10'</span>), <span class="va">None</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="getting-values-into-python" class="level2">
+<h2 class="anchored" data-anchor-id="getting-values-into-python">Getting values into Python</h2>
+<p><code>run</code> returns display text, which is what you want to look at, but not what you want to compute with. For that, ask the interpreter to serialize the value with <code>⎕JSON</code> and parse it on our side. The <code>HighRank</code> variant option makes rank≥2 arrays serialize as nested lists (by default <code>⎕JSON</code> refuses them). The <code>1</code> left argument forces export: monadic <code>⎕JSON</code> on a character vector would parse it as JSON instead of serializing it.</p>
+<div id="a772e2a9" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-04T04:54:50.714867+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-04T04:54:50.716895+00:00&quot;,&quot;total&quot;:0.0020299520000008897}}" data-execution_count="24">
+<hr>
+<p><a href="https://github.com/answerdotai/aplnb/blob/main/aplnb/core.py#L173" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="apl.pyval" class="level3">
+<h3 class="anchored" data-anchor-id="apl.pyval">Apl.pyval</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb40"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> pyval(</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>    expr</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Evaluate <code>expr</code> and return the result as a Python value</em></p>
+</section>
+</div>
+<div id="160c8a66" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb41"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>test_eq(apl.pyval(<span class="st">'m'</span>), [[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>],[<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>]])</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>test_eq(apl.pyval(<span class="st">'3×⍳4'</span>), [<span class="dv">3</span>,<span class="dv">6</span>,<span class="dv">9</span>,<span class="dv">12</span>])</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>test_eq(apl.pyval(<span class="st">'⎕A'</span>), <span class="st">'ABCDEFGHIJKLMNOPQRSTUVWXYZ'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>pyval</code> is wordy for the most common case, grabbing a variable. Square brackets read better, and <code>⎕JSON</code> works in both directions, so we can assign Python values into the workspace too:</p>
+<div id="40471d55" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-04T04:54:50.717949+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-04T04:54:50.719739+00:00&quot;,&quot;total&quot;:0.0017923750000079508}}" data-execution_count="26">
+<hr>
+<p><a href="https://github.com/answerdotai/aplnb/blob/main/aplnb/core.py#L186" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="apl.__setitem__" class="level3">
+<h3 class="anchored" data-anchor-id="apl.__setitem__">Apl.__setitem__</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb42"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> <span class="fu">__setitem__</span>(</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>    nm, v</span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Call self as a function.</em></p>
+</section>
+</div>
+<div id="2cc166c2" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-04T04:54:50.719811+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-04T04:54:50.721538+00:00&quot;,&quot;total&quot;:0.0017294399999912002}}" data-execution_count="27">
+<hr>
+<p><a href="https://github.com/answerdotai/aplnb/blob/main/aplnb/core.py#L183" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="apl.__getitem__" class="level3">
+<h3 class="anchored" data-anchor-id="apl.__getitem__">Apl.__getitem__</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb43"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> <span class="fu">__getitem__</span>(</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>    expr</span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Call self as a function.</em></p>
+</section>
+</div>
+<div id="dcd300af" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb44"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>apl[<span class="st">'q'</span>] <span class="op">=</span> [[<span class="dv">1</span>,<span class="dv">2</span>],[<span class="dv">3</span>,<span class="fl">4.5</span>]]</span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>test_eq(apl[<span class="st">'q'</span>], [[<span class="dv">1</span>,<span class="dv">2</span>],[<span class="dv">3</span>,<span class="fl">4.5</span>]])</span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>test_eq(apl[<span class="st">"'nested: ',⍕⎕NC'q'"</span>], <span class="st">'nested: 2'</span>)</span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>apl[<span class="st">'s'</span>] <span class="op">=</span> <span class="st">"it's"</span></span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>test_eq(apl[<span class="st">'s'</span>], <span class="st">"it's"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Note that <code>⎕JSON</code> imports nested lists as vectors of vectors, not as rank-2 arrays. When you want a proper matrix, mix with <code>↑</code>:</p>
+<div id="dd87a8f4" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb45"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>apl(<span class="st">'↑q'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre class="aplnb_out sax2">1 2  
+3 4.5</pre>
+</div>
+</div>
+<p><code>fn</code> goes one step further: it turns any APL function into a Python callable. One argument applies it monadically; two applies it dyadically, in APL’s left-argument-first order. Arguments travel in as <code>⎕JSON</code> and the result comes back through <code>pyval</code>:</p>
+<div id="ee7e8c4c" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-04T04:54:50.722638+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-04T04:54:50.724663+00:00&quot;,&quot;total&quot;:0.002027939000001311}}" data-execution_count="29">
+<hr>
+<p><a href="https://github.com/answerdotai/aplnb/blob/main/aplnb/core.py#L190" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="apl.fn" class="level3">
+<h3 class="anchored" data-anchor-id="apl.fn">Apl.fn</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb46"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> fn(</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>    code</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>A Python callable applying APL function <code>code</code> monadically or dyadically</em></p>
+</section>
+</div>
+<div id="41cd67a8" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb47"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>sq <span class="op">=</span> apl.fn(<span class="st">'{⍵*2}'</span>)</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>test_eq(sq([<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>]), [<span class="dv">1</span>,<span class="dv">4</span>,<span class="dv">9</span>])</span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>test_eq(apl.fn(<span class="st">'+/'</span>)([<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>]), <span class="dv">6</span>)</span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>test_eq(apl.fn(<span class="st">'↑'</span>)(<span class="dv">2</span>, [<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>]), [<span class="dv">5</span>,<span class="dv">6</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Sessions close themselves at process exit, but a context manager is tidier for short-lived ones:</p>
+<div id="19c3084f" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-04T04:54:50.725513+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-04T04:54:50.727204+00:00&quot;,&quot;total&quot;:0.0016923740000009957}}" data-execution_count="31">
+<hr>
+<p><a href="https://github.com/answerdotai/aplnb/blob/main/aplnb/core.py#L203" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="apl.__exit__" class="level3">
+<h3 class="anchored" data-anchor-id="apl.__exit__">Apl.__exit__</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb48"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> <span class="fu">__exit__</span>(</span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>args</span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Call self as a function.</em></p>
+</section>
+</div>
+<div id="cf874d99" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-04T04:54:50.727274+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-04T04:54:50.728939+00:00&quot;,&quot;total&quot;:0.0016671369999983199}}" data-execution_count="32">
+<hr>
+<p><a href="https://github.com/answerdotai/aplnb/blob/main/aplnb/core.py#L200" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="apl.__enter__" class="level3">
+<h3 class="anchored" data-anchor-id="apl.__enter__">Apl.__enter__</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb49"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> <span class="fu">__enter__</span>():</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Call self as a function.</em></p>
+</section>
+</div>
+<div id="5c765ee8" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb50"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> Apl() <span class="im">as</span> a2: test_eq(a2(<span class="st">'2+2'</span>), <span class="st">'4</span><span class="ch">\n</span><span class="st">'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="input-requests-and-incomplete-input" class="level2">
+<h2 class="anchored" data-anchor-id="input-requests-and-incomplete-input">Input requests and incomplete input</h2>
+<p>A cell that asks for keyboard input can’t be satisfied in a notebook, so <code>run</code> cancels the request and raises, leaving the session usable:</p>
+<div id="acc4a963" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb51"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>test_fail(<span class="kw">lambda</span>: apl(<span class="st">'x←⎕'</span>), contains<span class="op">=</span><span class="st">'not supported'</span>)</span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>test_eq(apl(<span class="st">'2+2'</span>), <span class="st">'4</span><span class="ch">\n</span><span class="st">'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="d333757b" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb52"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>test_fail(<span class="kw">lambda</span>: apl(<span class="st">'x←⍞'</span>), contains<span class="op">=</span><span class="st">'not supported'</span>)</span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>test_eq(apl(<span class="st">'2+2'</span>), <span class="st">'4</span><span class="ch">\n</span><span class="st">'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Incomplete input is unrecoverable, so <code>run</code> replaces the wedged interpreter with a fresh workspace and raises with <code>reset</code> set:</p>
+<div id="bf95cb08" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb53"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>: apl(<span class="st">':If 1'</span>)</span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> AplError <span class="im">as</span> ex: err <span class="op">=</span> ex</span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>test_eq(err.reset, <span class="va">True</span>)</span>
+<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> <span class="st">'wedged'</span> <span class="kw">in</span> <span class="bu">str</span>(err)</span>
+<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a>test_eq(apl(<span class="st">'2+2'</span>), <span class="st">'4</span><span class="ch">\n</span><span class="st">'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Long computations must not be cut off: the socket timeout guards startup only, and is lifted once the session is ready, so <code>run</code> waits as long as the code takes.</p>
+<div id="a72dc87e" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb54"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> Apl(timeout<span class="op">=</span><span class="dv">2</span>) <span class="im">as</span> a2: <span class="cf">assert</span> <span class="bu">float</span>(a2.run(<span class="st">'⎕←⎕DL 3'</span>)) <span class="op">&gt;=</span> <span class="dv">3</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="the-apl-magics" class="level2">
+<h2 class="anchored" data-anchor-id="the-apl-magics">The <code>apl</code> magics</h2>
+<p><code>%%apl</code> runs a cell and displays the session output, rendered in Adám Brudzewsky’s <a href="https://github.com/abrudz/SAX2">SAX2</a> APL font (loaded from a CDN, falling back to plain monospace offline), so results look exactly as they do in a Dyalog session. <code>%apl expr</code> returns the expression’s value as a Python object (it’s just <code>apl[expr]</code>), so it works on the right of an assignment: <code>z = %apl z</code>. A trailing <code>;</code> on a cell suppresses its output, and the interpreter only starts on first use, not when the magic is registered. The <a href="https://abrudz.github.io/lb/apl">APL language bar</a> is injected into the page the first time a magic runs.</p>
+<div id="d9385a71" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-04T04:54:50.730688+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-04T04:54:50.732464+00:00&quot;,&quot;total&quot;:0.001778313999992065}}" data-execution_count="34">
+<hr>
+<p><a href="https://github.com/answerdotai/aplnb/blob/main/aplnb/core.py#L211" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="aplmagic" class="level3">
+<h3 class="anchored" data-anchor-id="aplmagic">APLMagic</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb55"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> APLMagic(</span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>    dyalog:NoneType<span class="op">=</span><span class="va">None</span></span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>IPython <code>%apl</code>/<code>%%apl</code> magics, driving a lazily-started <a href="https://answerdotai.github.io/aplnb/core.html#apl"><code>Apl</code></a> session</em></p>
+</section>
+</div>
+<div id="13fdd69a" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-04T04:54:50.733156+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-04T04:54:50.734944+00:00&quot;,&quot;total&quot;:0.0017910330000034946}}" data-execution_count="36">
+<hr>
+<p><a href="https://github.com/answerdotai/aplnb/blob/main/aplnb/core.py#L230" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="create_magic" class="level3">
+<h3 class="anchored" data-anchor-id="create_magic">create_magic</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb56"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> create_magic(</span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a>    shell:NoneType<span class="op">=</span><span class="va">None</span></span>
+<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Create an <a href="https://answerdotai.github.io/aplnb/core.html#aplmagic"><code>APLMagic</code></a> and register its <code>apl</code> line/cell magic with <code>shell</code>, returning it</em></p>
+</section>
+</div>
+<div id="858b3925" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb57"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Only required if you don't load the extension</span></span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>magic <span class="op">=</span> create_magic()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="4097df1c" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb58"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>apl</span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a>m2←<span class="dv">3</span> <span class="dv">3</span>⍴⍳<span class="dv">9</span></span>
+<span id="cb58-3"><a href="#cb58-3" aria-hidden="true" tabindex="-1"></a>⎕←m2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<script type="application/javascript">
+// APL language bar by Adám Brudzewsky: https://abrudz.github.io/lb (source: https://github.com/abrudz/lb)
+// MIT License, Copyright (c) 2011-2020 Nikolay G. Nikolov and Adam Brudzevski. This is a modified copy bundled with iversonnb.
+// Changes from upstream: double backtick composes ```; insertion via insertText so undo and input events work;
+// Monaco editor support (incl. EditContext mode); dark mode; overlay/push-down toggle persisted per site;
+// idempotent injection; ResizeObserver-driven layout; @font-face with dead url() removed; skipped on quarto-rendered pages.
+; (_ => {
+    if (document.querySelector('.ngn_lb')) return
+    if (document.querySelector('meta[name=generator][content^=quarto]')) return //no bar on rendered docs pages
+    let hc = { '<': '&lt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }, he = x => x.replace(/[<&'"]/g, c => hc[c]) //html chars and escape fn
+        , tcs = '<-←xx×/\\×:-÷*O⍟[-⌹-]⌹OO○77⌈FF⌈ll⌊LL⌊T_⌶II⌶|_⊥TT⊤-|⊣|-⊢=/≠L-≠<=≤<_≤>=≥>_≥==≡=_≡7=≢Z-≢vv∨^^∧^~⍲v~⍱^|↑v|↓((⊂cc⊂(_⊆c_⊆))⊃[|⌷|]⌷A|⍋V|⍒ii⍳i_⍸ee∊e_⍷' +
+            'uu∪UU∪nn∩/-⌿\\-⍀,-⍪rr⍴pp⍴O|⌽O-⊖O\\⍉::¨""¨~:⍨~"⍨*:⍣*"⍣oo∘o:⍤o"⍤O:⍥O"⍥[\'⍞\']⍞[]⎕[:⍠:]⍠[=⌸=]⌸[<⌺>]⌺o_⍎oT⍕o-⍕<>⋄^v⋄on⍝->→aa⍺ww⍵VV∇v-∇--¯0~⍬' +
+            'AA∆^-∆A_⍙^=⍙[?⍰?]⍰:V⍢∇"⍢||∥ox¤)_⊇_)⊇V~⍫\'\'`'
+        , lbs = ['←←\nASSIGN', ' ', '++\nconjugate\nplus', '--\nnegate\nminus', '××\ndirection\ntimes', '÷÷\nreciprocal\ndivide', '**\nexponential\npower', '⍟⍟\nnatural logarithm\nlogarithm',
+            '⌹⌹\nmatrix inverse\nmatrix divide', '○○\npi times\ncircular', '!!\nfactorial\nbinomial', '??\nroll\ndeal', ' ', '||\nmagnitude\nresidue',
+            '⌈⌈\nceiling\nmaximum', '⌊⌊\nfloor\nminimum', '⊥⊥\ndecode', '⊤⊤\nencode', '⊣⊣\nsame\nleft', '⊢⊢\nsame\nright', ' ', '==\nequal', '≠≠\nunique mask\nnot equal',
+            '≤≤\nless than or equal to', '<<\nless than', '>>\ngreater than', '≥≥\ngreater than or equal to', '≡≡\ndepth\nmatch', '≢≢\ntally\nnot match', ' ', '∨∨\ngreatest common divisor/or',
+            '∧∧\nlowest common multiple/and', '⍲⍲\nnand', '⍱⍱\nnor', ' ', '↑↑\nmix\ntake', '↓↓\nsplit\ndrop', '⊂⊂\nenclose\npartioned enclose', '⊃⊃\nfirst\npick', '⊆⊆\nnest\npartition', '⌷⌷\nmaterialise\nindex', '⍋⍋\ngrade up\ngrades up',
+            '⍒⍒\ngrade down\ngrades down', ' ', '⍳⍳\nindices\nindices of', '⍸⍸\nwhere\ninterval index', '∊∊\nenlist\nmember of', '⍷⍷\nfind', '∪∪\nunique\nunion', '∩∩\nintersection', '~~\nnot\nwithout', ' ',
+            '//\nreplicate\nReduce', '\\\\\n\expand\nScan', '⌿⌿\nreplicate first\nReduce First', '⍀⍀\nexpand first\nScan First', ' ', ',,\nravel\ncatenate/laminate',
+            '⍪⍪\ntable\ncatenate first/laminate', '⍴⍴\nshape\nreshape', '⌽⌽\nreverse\nrotate', '⊖⊖\nreverse first\nrotate first',
+            '⍉⍉\ntranspose\nreorder axes', ' ', '¨¨\nEach', '⍨⍨\nConstant\nSelf\nSwap', '⍣⍣\nRepeat\nUntil', '..\nOuter Product (∘.)\nInner Product',
+            '∘∘\nOUTER PRODUCT (∘.)\nBind\nBeside', '⍤⍤\nRank\nAtop', '⍥⍥\nOver', '@@\nAt', ' ', '⍞⍞\nSTDIN\nSTDERR', '⎕⎕\nEVALUATED STDIN\nSTDOUT\nSYSTEM NAME PREFIX', '⍠⍠\nVariant',
+            '⌸⌸\nIndex Key\nKey', '⌺⌺\nStencil', '⌶⌶\nI-Beam', '⍎⍎\nexecute', '⍕⍕\nformat', ' ', '⋄⋄\nSTATEMENT SEPARATOR', '⍝⍝\nCOMMENT', '→→\nABORT\nBRANCH', '⍵⍵\nRIGHT ARGUMENT\nRIGHT OPERAND (⍵⍵)', '⍺⍺\nLEFT ARGUMENT\nLEFT OPERAND (⍺⍺)',
+            '∇∇\nrecursion\nRecursion (∇∇)', '&&\nSpawn', ' ', '¯¯\nNEGATIVE', '⍬⍬\nEMPTY NUMERIC VECTOR', '∆∆\nIDENTIFIER CHARACTER', '⍙⍙\nIDENTIFIER CHARACTER']
+        , bqk = ' =1234567890-qwertyuiop\\asdfghjk∙l;\'zxcvbnm,./q[]+!@#$%^&*()_QWERTYUIOP|ASDFGHJKL:"ZXCVBNM<>?~{}'.replace(/∙/g, '')
+        , bqv = '`÷¨¯<≤=≥>≠∨∧×⋄⍵∊⍴~↑↓⍳○*⊢∙⍺⌈⌊_∇∆∘\'⎕⍎⍕∙⊂⊃∩∪⊥⊤|⍝⍀⌿⋄←→⌹⌶⍫⍒⍋⌽⍉⊖⍟⍱⍲!⍰W⍷R⍨YU⍸⍥⍣⊣ASDF⍢H⍤⌸⌷≡≢⊆⊇CVB¤∥⍪⍙⍠⌺⍞⍬'.replace(/∙/g, '')
+        , tc = {}, bqc = {} //tab completions and ` completions
+    for (let i = 0; i < bqk.length; i++)bqc[bqk[i]] = bqv[i]
+    for (let i = 0; i < tcs.length; i += 3)tc[tcs[i] + tcs[i + 1]] = tcs[i + 2]
+    for (let i = 0; i < tcs.length; i += 3) { let k = tcs[i + 1] + tcs[i]; tc[k] = tc[k] || tcs[i + 2] }
+    let lbh = ''; for (let i = 0; i < lbs.length; i++) {
+        let ks = []
+        for (let j = 0; j < tcs.length; j += 3)if (lbs[i][0] === tcs[j + 2]) ks.push('\n' + tcs[j] + ' ' + tcs[j + 1] + ' <tab>')
+        for (let j = 0; j < bqk.length; j++)if (lbs[i][0] === bqv[j]) ks.push('\n` ' + bqk[j])
+        lbh += '<b title="' + he(lbs[i].slice(1) + (ks.length ? '\n' + ks.join('') : '')) + '">' + lbs[i][0] + '</b>'
+    }
+    let ovl; try { ovl = localStorage.getItem('ngn_lb_overlay') === '1' } catch (e) { ovl = !1 } //overlay mode: bar covers the top instead of pushing the page down
+    let d = document, el = d.createElement('div'); el.innerHTML =
+        `<div class=ngn_lb><span class=ngn_x title=Close>❎</span><span class=ngn_o title="Toggle overlay/push-down">${ovl ? '▼' : '▲'}</span>${lbh}</div>
+ <style>
+  .ngn_lb{position:fixed;top:0;left:0;right:0;background-color:#eee;color:#000;cursor:default;z-index:2147483647;
+    font-family:"DejaVu Sans Mono",monospace;border-bottom:solid #999 1px;padding:2px 2px 0 2px;word-wrap:break-word;}
+  .ngn_lb b{cursor:pointer;padding:0 1px;font-weight:normal}
+  .ngn_lb b:hover,.ngn_bq .ngn_lb{background-color:#777;color:#fff}
+  .ngn_x,.ngn_o{float:right;color:#999;cursor:pointer;margin-top:-3px}
+  .ngn_o{margin-right:6px}
+  .ngn_o:hover{color:#00d}
+  .ngn_x:hover{color:#f00}
+  @media (prefers-color-scheme:dark){
+   .ngn_lb{background-color:#222;color:#ddd;border-bottom-color:#555}
+   .ngn_lb b:hover,.ngn_bq .ngn_lb{background-color:#bbb;color:#000}
+   .ngn_x,.ngn_o{color:#666}
+  }
+ </style>`
+    d.body.appendChild(el)
+    let t, lb = el.firstChild, bqm = 0 //t:textarea or input, lb:language bar, bqm:backquote mode
+    let pd = x => x.preventDefault()
+    let ev = (x, t, f, c) => x.addEventListener(t, f, c)
+    let med = _ => { try { return window.monaco?.editor?.getEditors?.().find(e => e.hasTextFocus()) } catch (e) { } } //focused Monaco editor, if any
+    let ins = (t, s, del = 0) => { //insert s at caret (replacing selection, or del chars before it), keeping undo & input events
+        let m = med()
+        if (m) {
+            if (del) {
+                let p = m.getPosition()
+                m.executeEdits('lb', [{ range: { startLineNumber: p.lineNumber, startColumn: p.column - del, endLineNumber: p.lineNumber, endColumn: p.column }, text: s }])
+            } else m.trigger('keyboard', 'type', { text: s })
+            return
+        }
+        if (!t || t.selectionStart == null) return
+        if (del) t.selectionStart = t.selectionStart - del
+        if (!(d.execCommand && d.execCommand('insertText', !1, s))) {
+            let i = t.selectionStart
+            t.value = t.value.slice(0, i) + s + t.value.slice(t.selectionEnd)
+            t.selectionStart = t.selectionEnd = i + s.length
+            t.dispatchEvent(new Event('input', { bubbles: !0 }))
+        }
+    }
+    ev(lb, 'mousedown', x => {
+        if (x.target.classList.contains('ngn_x')) { lb.hidden = 1; upd() }
+        else if (x.target.classList.contains('ngn_o')) {
+            ovl = !ovl
+            x.target.textContent = ovl ? '▼' : '▲'
+            try { localStorage.setItem('ngn_lb_overlay', ovl ? '1' : '0') } catch (e) { }
+            upd()
+        } else if (x.target.nodeName === 'B') {
+            let s = x.target.textContent, m = med()
+            if (m) { m.focus(); ins(t, s) }
+            else if (t && t.selectionStart != null) { t.focus(); ins(t, s) }
+        }
+        pd(x) //always: clicking the bar must never steal focus
+    })
+    let fk = x => {
+        let t = x.target, m = med(), i, v
+        if (m) { let p = m.getPosition(); i = p.column - 1; v = m.getModel().getLineContent(p.lineNumber) }
+        else { i = t.selectionStart; v = t.value }
+        if (bqm) {
+            let c = bqc[x.key]
+            if (x.key === '`') {
+                ins(t, '```')
+                if (m) { let p = m.getPosition(); m.setPosition({ lineNumber: p.lineNumber, column: p.column - 2 }) }
+                else t.selectionStart = t.selectionEnd = i + 1
+                bqm = 0
+                d.body.classList.remove('ngn_bq')
+                pd(x)
+                return !1
+            }
+            if (x.which > 31) { bqm = 0; d.body.classList.remove('ngn_bq') }
+            if (c) { ins(t, c); pd(x); return !1 }
+        }
+        if (!x.ctrlKey && !x.shiftKey && !x.altKey && !x.metaKey) {
+            if ("`½²^º§ùµ°".indexOf(x.key) > -1) {
+                bqm = 1; d.body.classList.add('ngn_bq'); pd(x); // ` or other trigger symbol pressed, wait for next key
+            } else if (x.key == "Tab") {
+                let c = i >= 2 && tc[v.slice(i - 2, i)]
+                if (c) { ins(t, c, 2); pd(x) }
+            }
+        }
+    }
+    let ff = x => {
+        let t0 = x.target, nn = t0.nodeName.toLowerCase()
+        if (nn !== 'textarea' && (nn !== 'input' || t0.type !== 'text' && t0.type !== 'search')) return
+        t = t0; if (!t.ngn) { t.ngn = 1; ev(t, 'keydown', fk) }
+    }
+    let upd = _ => { d.body.style.paddingTop = ovl ? '' : lb.clientHeight + 'px' }
+    upd(); (window.ResizeObserver ? new ResizeObserver(upd).observe(lb) : ev(window, 'resize', upd))
+    ev(d, 'focus', ff, !0); let ae = d.activeElement; ae && ff({ type: 'focus', target: ae })
+    ev(d, 'keydown', x => { if (!x.target.ngn && x.target.closest?.('.monaco-editor')) fk(x) }, !0) //EditContext-mode Monaco has no textarea for ff to register
+})();
+
+
+</script>
+</div>
+<div class="cell-output cell-output-display">
+<style>
+@font-face { font-family:'SAX2'; src: local('SAX2'), url('https://cdn.jsdelivr.net/gh/abrudz/SAX2@master/SAX2.ttf') format('truetype') }
+.sax2 { font-family:'SAX2',monospace !important; line-height:1.05 !important }
+</style>
+</div>
+<div class="cell-output cell-output-display">
+<pre class="aplnb_out sax2">1 2 3
+4 5 6
+7 8 9</pre>
+</div>
+</div>
+<p>The line magic brings values back into Python:</p>
+<div id="6c2f8c76" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb59"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>z <span class="op">=</span> <span class="op">%</span>apl m2  ⍝ comments are fine here too</span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a>test_eq(z, [[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>],[<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>],[<span class="dv">7</span>,<span class="dv">8</span>,<span class="dv">9</span>]])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>]</code> user commands work, and a trailing <code>;</code> suppresses cell output entirely:</p>
+<div id="2a5ff74e" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb60"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>apl</span>
+<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a>]display <span class="dv">2</span> <span class="dv">2</span>⍴<span class="st">'ab'</span> <span class="st">'cd'</span> <span class="dv">1</span> <span class="dv">2</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre class="aplnb_out sax2">┌→──────────┐
+↓ ┌→─┐ ┌→─┐ │
+│ │ab│ │cd│ │
+│ └──┘ └──┘ │
+│           │
+│ 1    2    │
+│           │
+└∊──────────┘</pre>
+</div>
+</div>
+<div id="0f9277eb" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb61"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>apl</span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a>big←<span class="dv">1000</span> <span class="dv">1000</span>⍴⍳<span class="dv">12</span><span class="op">;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="7206e305" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-04T04:54:50.736172+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-04T04:54:50.737839+00:00&quot;,&quot;total&quot;:0.001669039000006478}}" data-execution_count="39">
+<hr>
+<p><a href="https://github.com/answerdotai/aplnb/blob/main/aplnb/core.py#L239" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="load_ipython_extension" class="level3">
+<h3 class="anchored" data-anchor-id="load_ipython_extension">load_ipython_extension</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb62"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> load_ipython_extension(</span>
+<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a>    ipython</span>
+<span id="cb62-3"><a href="#cb62-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Required function for creating magic</em></p>
+</section>
+</div>
+<div id="6de95ee0" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-04T04:54:50.738739+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-04T04:54:50.740642+00:00&quot;,&quot;total&quot;:0.0019054649999930007}}" data-execution_count="41">
+<hr>
+<p><a href="https://github.com/answerdotai/aplnb/blob/main/aplnb/core.py#L244" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="create_ipython_config" class="level3">
+<h3 class="anchored" data-anchor-id="create_ipython_config">create_ipython_config</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb63"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> create_ipython_config():</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Called by <code>aplnb_install</code> to install magic</em></p>
+</section>
+</div>
+</section>
+<section id="cleanup" class="level2">
+<h2 class="anchored" data-anchor-id="cleanup">Cleanup</h2>
+<p>Shut down the sessions this notebook started: the magic’s, the <a href="https://answerdotai.github.io/aplnb/core.html#apl"><code>Apl</code></a> object’s, and the raw-socket walkthrough one.</p>
+<div id="bce4a303" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb64"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a>magic.o.close()</span>
+<span id="cb64-2"><a href="#cb64-2" aria-hidden="true" tabindex="-1"></a>apl.close()</span>
+<span id="cb64-3"><a href="#cb64-3" aria-hidden="true" tabindex="-1"></a>ride_send(sock, [<span class="st">'Exit'</span>,{<span class="st">'code'</span>:<span class="dv">0</span>}])</span>
+<span id="cb64-4"><a href="#cb64-4" aria-hidden="true" tabindex="-1"></a>sock.close()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/answerdotai\.github\.io\/aplnb");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/answerdotai/aplnb/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
