@@ -1,0 +1,190 @@
+[
+  {
+    "objectID": "core.html",
+    "href": "core.html",
+    "title": "aplnb core",
+    "section": "",
+    "text": "aplnb runs Dyalog APL from Python and provides apl magics for Jupyter and IPython. It uses the RIDE protocol, as do Dyalog’s IDE and official Jupyter kernel. It needs no extra code loaded into the APL workspace.\nRIDE messages distinguish output, errors, and readiness for input. The examples below show the protocol before building the Apl session object.",
+    "crumbs": [
+      "aplnb core"
+    ]
+  },
+  {
+    "objectID": "core.html#finding-and-starting-dyalog",
+    "href": "core.html#finding-and-starting-dyalog",
+    "title": "aplnb core",
+    "section": "Finding and starting Dyalog",
+    "text": "Finding and starting Dyalog\n\n\nsource\n\nfind_dyalog\ndef find_dyalog():\nLocate the Dyalog interpreter binary\n\n\nfind_dyalog first looks for mapl or dyalog on PATH. It then checks standard installation directories on macOS and Linux.\n\nfind_dyalog()\n\n'/usr/local/bin/dyalog'\n\n\nRIDE supports two connection directions. With RIDE_INIT=SERVE:*:port, the interpreter listens for a client. Dyalog’s Jupyter kernel uses this mode and polls for the listening port.\naplnb uses CONNECT mode. It listens on a port allocated by the OS, then starts Dyalog with that address. accept() waits for the interpreter to connect. This avoids selecting an unused port before binding it. The environment also sets RIDE_SPAWNED=1; explicit shutdown is covered below.\n\n\nsource\n\nstart_dyalog\ndef start_dyalog(\n    dyalog:NoneType=None, # Path to the interpreter binary; `find_dyalog()` result if None\n    timeout:int=10, # Socket timeout (secs), so a client bug can never hang the caller\n):\nSpawn a Dyalog interpreter that connects back to us over RIDE; return (socket,Popen)\n\n\n\nsock,proc = start_dyalog()",
+    "crumbs": [
+      "aplnb core"
+    ]
+  },
+  {
+    "objectID": "core.html#message-framing",
+    "href": "core.html#message-framing",
+    "title": "aplnb core",
+    "section": "Message framing",
+    "text": "Message framing\nThe interpreter speaks first. Here are the raw bytes:\n\nraw = sock.recv(64)\nraw\n\nb'\\x00\\x00\\x00\\x1cRIDESupportedProtocols=2'\n\n\nA RIDE message contains a 4-byte big-endian total length, the literal RIDE, and a UTF-8 payload. Here 0x1c is 28: 4 length bytes, 4 bytes for RIDE, and 20 for SupportedProtocols=2.\nThe first two messages in each direction negotiate the protocol version as plain strings. Later payloads are JSON arrays containing a command name and its arguments.\nDyalog sometimes sends raw control characters inside JSON strings. ride_recv escapes these before decoding, as does the official Jupyter kernel.\n\n\nsource\n\nride_recv\ndef ride_recv(\n    sock\n):\nReceive one RIDE message, JSON-decoded unless it’s a handshake string\n\n\n\n\nsource\n\nride_send\ndef ride_send(\n    sock, msg\n):\nSend one RIDE message: a handshake str, or a [cmd,args] list sent as JSON\n\n\nEach side sends SupportedProtocols=2 and UsingProtocol=2. The client then sends Identify and reads the interpreter’s details:\n\nride_send(sock, 'SupportedProtocols=2')\nride_send(sock, 'UsingProtocol=2')\nride_recv(sock)\n\n'UsingProtocol=2'\n\n\n\nride_send(sock, ['Identify',{'apiVersion':1,'identity':1}])\ninfo = ride_recv(sock)[1]\n{k:info[k] for k in ('Vendor','Language','version','arch','platform')}\n\n{'Vendor': 'Dyalog Limited',\n 'Language': 'APL',\n 'version': '20.0.53963',\n 'arch': 'Unicode/64',\n 'platform': 'Mac-64'}\n\n\nWait for SetPromptType with type 1, which signals readiness for input:\n\nmsgs = []\nwhile True:\n    m = ride_recv(sock)\n    msgs.append(m)\n    if m[0]=='SetPromptType' and m[1]['type']==1: break\nmsgs\n\n[['UpdateDisplayName', {'displayName': 'CLEAR WS'}],\n ['SetPromptType', {'type': 1}]]",
+    "crumbs": [
+      "aplnb core"
+    ]
+  },
+  {
+    "objectID": "core.html#executing-code",
+    "href": "core.html#executing-code",
+    "title": "aplnb core",
+    "section": "Executing code",
+    "text": "Executing code\nExecute sends session input with a required trailing newline. Dyalog echoes the input and sends output in AppendSessionOutput messages. SetPromptType 1 signals that execution has finished and the interpreter is ready for more input.\n\nride_send(sock, ['Execute',{'text':'3×⍳4\\n','trace':0}])\nmsgs = []\nwhile True:\n    m = ride_recv(sock)\n    msgs.append(m)\n    if m[0]=='SetPromptType' and m[1]['type']==1: break\nmsgs\n\n[['UpdateSessionCaption', {'text': 'CLEAR WS - Dyalog APL'}],\n ['AppendSessionOutput', {'result': '3×⍳4\\n', 'type': 14, 'group': 0}],\n ['SetPromptType', {'type': 0}],\n ['AppendSessionOutput', {'result': '3 6 9 12\\n', 'type': 2, 'group': 0}],\n ['SetPromptType', {'type': 1}]]\n\n\nOutput type 14 is an input echo. HadError reports an error independently of its displayed text:\n\nride_send(sock, ['Execute',{'text':'1÷0\\n','trace':0}])\nmsgs = []\nwhile True:\n    m = ride_recv(sock)\n    msgs.append(m)\n    if m[0]=='SetPromptType' and m[1]['type']==1: break\nmsgs\n\n[['AppendSessionOutput', {'result': '1÷0\\n', 'type': 14, 'group': 0}],\n ['SetPromptType', {'type': 0}],\n ['HadError', {'error': 11, 'dmx': 1}],\n ['AppendSessionOutput',\n  {'result': 'DOMAIN ERROR: Divide by zero\\n', 'type': 5, 'group': 0}],\n ['AppendSessionOutput', {'result': '      1÷0\\n', 'type': 5, 'group': 0}],\n ['AppendSessionOutput', {'result': '       ∧\\n', 'type': 5, 'group': 0}],\n ['SetPromptType', {'type': 1}]]\n\n\nAplError includes Dyalog’s error display. Its reset flag indicates that the interpreter was replaced and workspace state was lost. AplPrompt is an internal exception for prompts other than the ready prompt.\n\n\nsource\n\nAplPrompt\ndef AplPrompt(\n    ptype\n):\nThe session stopped at a non-ready prompt: 2=⎕ input, 3=incomplete input, 4=⍞ input\n\n\n\n\nsource\n\nAplError\ndef AplError(\n    msg, reset:bool=False\n):\nAn APL error, carrying the session’s error display as its message; reset means the interpreter was replaced and workspace state lost\n\n\nride_run sends all non-blank input lines in one Execute message. It collects output, excluding input echoes and prompt strings. The result is (output, errno), with error number 0 for success.\nA final prompt counts only after Dyalog has echoed every input line. This matters for multiline blocks, as the next example shows.\n\n\nsource\n\nride_run\ndef ride_run(\n    sock, code\n):\nRun one or more lines of APL in the session; return (output,errno) once the session is ready again",
+    "crumbs": [
+      "aplnb core"
+    ]
+  },
+  {
+    "objectID": "core.html#multi-line-input",
+    "href": "core.html#multi-line-input",
+    "title": "aplnb core",
+    "section": "Multi-line input",
+    "text": "Multi-line input\nDyalog 20.0 enables multiline session input by default. Send a complete block in one Execute message. The interpreter echoes each line and uses prompt type 3 while the block is open.\nA type 3 prompt before all line echoes means Dyalog is still reading the block. After all echoes, it means the submitted block is incomplete. Do not send another Execute at that prompt: the interpreter can crash. Apl.run handles incomplete input by replacing the interpreter.\n\nride_run(sock, '''\n:If 1\n    ⎕←6×7\n:EndIf''')\n\n('42\\n', 0)\n\n\nSession state persists across calls:\n\ntest_eq(ride_run(sock, 'x←⍳3\\nz←x×x\\n⎕←z'), ('1 4 9\\n', 0))\n\nErrors come back with the HadError number and the session error display:\n\nout,err = ride_run(sock, '1÷0')\nprint(out)\ntest_eq(err, 11)\n\nDOMAIN ERROR: Divide by zero\n      1÷0\n       ∧",
+    "crumbs": [
+      "aplnb core"
+    ]
+  },
+  {
+    "objectID": "core.html#a-session-object",
+    "href": "core.html#a-session-object",
+    "title": "aplnb core",
+    "section": "A session object",
+    "text": "A session object\nApl starts Dyalog and completes the handshake before accepting input. It sets the print width to 32767, matching the official kernel, to avoid wrapping long output.\n\n\nsource\n\nApl\ndef Apl(\n    dyalog:NoneType=None, timeout:int=10\n):\nA Dyalog APL session over the RIDE protocol\n\n\nclose sends Exit and waits up to three seconds. It kills the process if it has not exited. _connect registers this cleanup with atexit to avoid leaving Dyalog processes behind. Closing the socket alone does not reliably shut down a stuck interpreter.\n\n\nsource\n\nApl.close\ndef close():\nShut down the interpreter and close the connection\n\n\n\napl = Apl()\napl.info['version']\n\n'20.0.53963'\n\n\nrun returns output or raises AplError:\n\nOrdinary APL errors include the session’s error display.\nRequests for ⎕ or ⍞ input are cancelled. The session remains usable.\nIncomplete input, such as an unclosed :If, requires a new interpreter because of Dyalog/ride#1401. The exception has reset=True, indicating that workspace state was lost.\n\n\n\nsource\n\nApl.run\ndef run(\n    code\n):\nRun code in the session, returning its output; raises AplError on APL errors\n\n\n\nprint(apl.run('m←2 3⍴⍳6\\n⎕←m'))\n\n1 2 3\n4 5 6\n\n\n\nThe matrix remains available for later calls. Ordinary APL errors do not reset the session:\n\ntest_eq(apl.run('+/,m'), '21\\n')\ntest_fail(lambda: apl.run('m+\\'x\\''), contains='DOMAIN ERROR')\n\nCalling apl(code) displays output without an extra print. It returns AplOut, a str subclass that preserves Dyalog’s formatting in notebook displays. Results still support ordinary string operations. Calls with no output return None.\n\n\nsource\n\nApl.__call__\ndef __call__(\n    code\n):\nRun code, returning session output (or None if there is none)\n\n\n\n\nsource\n\nAplOut\ndef AplOut(\n    *args, **kwargs\n):\nOutput text from an Apl call; displays verbatim, in the SAX2 APL font where HTML is available\n\n\n\napl('m ∘.× ⍳4')\n\n1  2  3  4\n2  4  6  8\n3  6  9 12\n          \n4  8 12 16\n5 10 15 20\n6 12 18 24\n\n\n\ntest_eq(apl('+/,m'), '21\\n')\ntest_is(apl('m2←m×10'), None)",
+    "crumbs": [
+      "aplnb core"
+    ]
+  },
+  {
+    "objectID": "core.html#getting-values-into-python",
+    "href": "core.html#getting-values-into-python",
+    "title": "aplnb core",
+    "section": "Getting values into Python",
+    "text": "Getting values into Python\npyval returns a Python value instead of display text. It asks Dyalog to serialize the expression with ⎕JSON, then parses the JSON.\nThe HighRank option serializes arrays of rank 2 or higher as nested lists. Without it, ⎕JSON rejects these arrays. The left argument 1 forces serialization. Monadic ⎕JSON would try to parse a character vector as JSON.\n\n\nsource\n\nApl.pyval\ndef pyval(\n    expr\n):\nEvaluate expr and return the result as a Python value\n\n\n\ntest_eq(apl.pyval('m'), [[1,2,3],[4,5,6]])\ntest_eq(apl.pyval('3×⍳4'), [3,6,9,12])\ntest_eq(apl.pyval('⎕A'), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')\n\nUse square brackets to read an APL expression as a Python value or assign a Python value to an APL variable:\n\n\nsource\n\nApl.__setitem__\ndef __setitem__(\n    nm, v\n):\n\n\n\n\nsource\n\nApl.__getitem__\ndef __getitem__(\n    expr\n):\n\n\n\napl['q'] = [[1,2],[3,4.5]]\ntest_eq(apl['q'], [[1,2],[3,4.5]])\ntest_eq(apl[\"'nested: ',⍕⎕NC'q'\"], 'nested: 2')\napl['s'] = \"it's\"\ntest_eq(apl['s'], \"it's\")\n\n⎕JSON imports nested lists as vectors of vectors. Use ↑ to make a rank-2 matrix:\n\napl('↑q')\n\n1 2  \n3 4.5\n\n\nfn returns a Python callable for an APL function. One argument calls it monadically. Two arguments call it dyadically, with the left argument first. Arguments and results use the same JSON conversions as pyval and assignment.\n\n\nsource\n\nApl.fn\ndef fn(\n    code\n):\nA Python callable applying APL function code monadically or dyadically\n\n\n\nsq = apl.fn('{⍵*2}')\ntest_eq(sq([1,2,3]), [1,4,9])\ntest_eq(apl.fn('+/')([1,2,3]), 6)\ntest_eq(apl.fn('↑')(2, [5,6,7]), [5,6])\n\nUse a context manager to close a session before process exit:\n\n\nsource\n\nApl.__exit__\ndef __exit__(\n    *args\n):\n\n\n\n\nsource\n\nApl.__enter__\ndef __enter__():\n\n\n\nwith Apl() as a2: test_eq(a2('2+2'), '4\\n')",
+    "crumbs": [
+      "aplnb core"
+    ]
+  },
+  {
+    "objectID": "core.html#input-requests-and-incomplete-input",
+    "href": "core.html#input-requests-and-incomplete-input",
+    "title": "aplnb core",
+    "section": "Input requests and incomplete input",
+    "text": "Input requests and incomplete input\nCheck that cancelled input requests leave the session usable:\n\ntest_fail(lambda: apl('x←⎕'), contains='not supported')\ntest_eq(apl('2+2'), '4\\n')\n\n\ntest_fail(lambda: apl('x←⍞'), contains='not supported')\ntest_eq(apl('2+2'), '4\\n')\n\nCheck that incomplete input resets the workspace:\n\ntry: apl(':If 1')\nexcept AplError as ex: err = ex\ntest_eq(err.reset, True)\nassert 'wedged' in str(err)\ntest_eq(apl('2+2'), '4\\n')\n\nThe timeout parameter limits startup. Once connected, Apl.run waits as long as the computation takes:\n\nwith Apl(timeout=2) as a2: assert float(a2.run('⎕←⎕DL 3')) &gt;= 3",
+    "crumbs": [
+      "aplnb core"
+    ]
+  },
+  {
+    "objectID": "core.html#the-apl-magics",
+    "href": "core.html#the-apl-magics",
+    "title": "aplnb core",
+    "section": "The apl magics",
+    "text": "The apl magics\n%%apl runs a cell and displays its session output. A trailing ; suppresses the display. %apl expr returns a Python value, as with apl[expr], and can appear in an assignment: z = %apl z.\nThe first magic call starts the interpreter and adds the APL language bar to the page. Registration alone does not start Dyalog.\nOutput uses Adám Brudzewsky’s SAX2 APL font, loaded locally or from a CDN. Monospace is the fallback when SAX2 is unavailable.\n\n\nsource\n\nAPLMagic\ndef APLMagic(\n    dyalog:NoneType=None\n):\nIPython %apl/%%apl magics, driving a lazily-started Apl session\n\n\n\n\nsource\n\ncreate_magic\ndef create_magic(\n    shell:NoneType=None\n):\nCreate an APLMagic and register its apl line/cell magic with shell, returning it\n\n\n\n# Only required if you don't load the extension\nmagic = create_magic()\n\n\n%%apl\nm2←3 3⍴⍳9\n⎕←m2\n\n\n\n\n\n\n\n1 2 3\n4 5 6\n7 8 9\n\n\nThe line magic brings values back into Python:\n\nz = %apl m2  ⍝ comments are fine here too\ntest_eq(z, [[1,2,3],[4,5,6],[7,8,9]])\n\nThe first example runs ]display, a Dyalog user command. The second suppresses cell output with a trailing ;.\n\n%%apl\n]display 2 2⍴'ab' 'cd' 1 2\n\n┌→──────────┐\n↓ ┌→─┐ ┌→─┐ │\n│ │ab│ │cd│ │\n│ └──┘ └──┘ │\n│           │\n│ 1    2    │\n│           │\n└∊──────────┘\n\n\n\n%%apl\nbig←1000 1000⍴⍳12;\n\n\n\nsource\n\nload_ipython_extension\ndef load_ipython_extension(\n    ipython\n):\nRequired function for creating magic\n\n\n\n\nsource\n\ncreate_ipython_config\ndef create_ipython_config():\nCalled by aplnb_install to install magic",
+    "crumbs": [
+      "aplnb core"
+    ]
+  },
+  {
+    "objectID": "core.html#cleanup",
+    "href": "core.html#cleanup",
+    "title": "aplnb core",
+    "section": "Cleanup",
+    "text": "Cleanup\nShut down the sessions this notebook started: the magic’s, the Apl object’s, and the raw-socket walkthrough one.\n\nmagic.o.close()\napl.close()\nride_send(sock, ['Exit',{'code':0}])\nsock.close()",
+    "crumbs": [
+      "aplnb core"
+    ]
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "aplnb",
+    "section": "",
+    "text": "aplnb brings APL to notebooks: a %%apl cell magic and %apl line magic for Jupyter and IPython, executing code in Dyalog APL. It runs over the RIDE protocol, the same protocol Dyalog’s own IDE uses, so nothing needs to be loaded into your workspace, output looks exactly like a Dyalog session, and errors are detected reliably.\nSee core for a step by step walkthrough of how it’s built. For the J language, see the sibling project jnb.",
+    "crumbs": [
+      "aplnb"
+    ]
+  },
+  {
+    "objectID": "index.html#installation",
+    "href": "index.html#installation",
+    "title": "aplnb",
+    "section": "Installation",
+    "text": "Installation\nInstall Dyalog APL – Dyalog provides a basic license for free. aplnb is developed against Dyalog 20.0; 18.2 and later may work but are untested. Then:\npip install aplnb\nOnce that’s complete, you can install the magics to all IPython and Jupyter sessions automatically by running in your terminal:\naplnb_install\nThe APL interpreter only starts the first time you run a magic, so having aplnb installed everywhere costs nothing when you don’t use it.",
+    "crumbs": [
+      "aplnb"
+    ]
+  },
+  {
+    "objectID": "index.html#the-apl-magics",
+    "href": "index.html#the-apl-magics",
+    "title": "aplnb",
+    "section": "The apl magics",
+    "text": "The apl magics\nAfter first running an apl magic in a notebook, the APL language bar by Adám Brudzewsky is automatically added to the current page. (aplnb bundles a modified copy of Adám’s lb.js; the file header lists the changes. The most visible ones: type a backtick twice in a row to enter triple backticks, get a ⋄ glyph with backtick-q, and use the ▲/▼ button beside the close button to choose whether the bar pushes the page down or overlays it, remembered per site.)\nThe cell magic (%%apl) runs APL code and displays the session’s own output, rendered in Adám’s SAX2 APL font, so results look exactly as they do in Dyalog:\n\n%%apl\nm←3 3⍴⍳9\nm×10\n\n\n\n\n\n\n\n10 20 30\n40 50 60\n70 80 90\n\n\nAssignments are shy, just like in the Dyalog session, so the m← line above printed nothing. The line magic (%apl) instead evaluates one expression and returns it as a Python value:\n\n%apl 3×⍳4\n\n[3, 6, 9, 12]\n\n\n\n%apl ⎕A\n\n'ABCDEFGHIJKLMNOPQRSTUVWXYZ'\n\n\nBecause the line magic returns a value, you can store it in a Python variable. Scalars come back as numbers or strings, vectors as lists, and higher-rank arrays as nested lists:\n\nz = %apl m\nz\n\n[[1, 2, 3], [4, 5, 6], [7, 8, 9]]\n\n\nTo suppress a cell’s output, end the last line with a ;:\n\n%%apl\nm×10;\n\n⎕← displays a value explicitly, which is how you show something that would otherwise be shy:\n\n%%apl\nv←2×⍳5\n⎕←v\n\n2 4 6 8 10\n\n\nTo use numpy, just pass the result of %apl into np.array:\n\nimport numpy as np\n\n\na = %apl m\nnp.array(a)\n\narray([[1, 2, 3],\n       [4, 5, 6],\n       [7, 8, 9]])\n\n\n\nExample algorithms\nThe fibonacci sequence:\n\n%apl {⍵,+/¯2↑⍵}⍣15⊢1 1\n\n[1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597]\n\n\nExplanation:\n\n1 1: Initial seed (first two Fibonacci numbers)\n{⍵,+/¯2↑⍵}: Function that appends the sum of the last two elements\n⍣15: Apply the function 15 times\n⊢: Identity function, passes the initial argument (1 1) to the iteration\n\nPrime number sieve:\n\n%%apl\nprimes ← {⍵×2=+⌿0=⍵∘.|⍵}⍳\n(primes 50)~0\n\n2 3 5 7 11 13 17 19 23 29 31 37 41 43 47\n\n\nExplanation:\n\n⍳50 generates integers 1 to 50\n⍵∘.|⍵ creates a 50x50 matrix of divisibility (1 if divisible, 0 if not)\n0= inverts the matrix (1 for non-divisible)\n+⌿ sums columns, counting non-divisors for each number\n2= checks if count equals 2 (prime property)\n⍵× multiplies result with original numbers, keeping primes\n~0 removes zero from the result",
+    "crumbs": [
+      "aplnb"
+    ]
+  },
+  {
+    "objectID": "index.html#using-aplnb-from-python",
+    "href": "index.html#using-aplnb-from-python",
+    "title": "aplnb",
+    "section": "Using aplnb from Python",
+    "text": "Using aplnb from Python\nThe magics are a thin layer over the Apl class, which you can use directly in scripts, tests, and other tooling. Calling the session runs code and returns the output exactly as Dyalog formats it (or None if there’s no output); APL errors raise AplError:\n\nfrom aplnb import Apl\n\napl = Apl()\napl('3 3⍴⍳9')\n\n1 2 3\n4 5 6\n7 8 9\n\n\nSquare brackets move values between Python and the workspace, in both directions, and take any expression:\n\napl['v'] = [3,1,4,1,5]\napl['{⍵[⍋⍵]}v']\n\n[1, 1, 3, 4, 5]\n\n\nfn lifts an APL function into a Python callable (one argument applies it monadically, two dyadically):\n\nmean = apl.fn('{(+/⍵)÷≢⍵}')\nmean([1,2,3,4])\n\n2.5\n\n\nSessions shut themselves down at process exit; use close, or a with Apl() as apl: block, to do it sooner:\n\napl.close()",
+    "crumbs": [
+      "aplnb"
+    ]
+  },
+  {
+    "objectID": "index.html#limitations",
+    "href": "index.html#limitations",
+    "title": "aplnb",
+    "section": "Limitations",
+    "text": "Limitations\n\nKeyboard input through ⎕ or ⍞ can’t work in a notebook, so it raises an error. The session survives.\nA cell that ends inside an unfinished block, such as an unclosed :If, wedges the Dyalog interpreter with no way back (Dyalog/ride#1401). aplnb detects this and starts a fresh session, raising an error that says so (with reset set on it), but workspace state is lost when it happens.\n%apl transfers values with ⎕JSON, so it’s limited to arrays and scalars that JSON can represent, serializing to at most 32767 characters. For bigger data, write a file from APL instead.\nWindows isn’t supported yet: aplnb configures Dyalog through environment variables, which is the Unix convention. macOS and Linux are supported.",
+    "crumbs": [
+      "aplnb"
+    ]
+  },
+  {
+    "objectID": "index.html#learning-apl",
+    "href": "index.html#learning-apl",
+    "title": "aplnb",
+    "section": "Learning APL",
+    "text": "Learning APL\nTo start learning APL, follow the 17 video series run by Jeremy Howard, and have a look at the study notes. The ] user commands mentioned there, such as ]Help ≠, work in aplnb too.",
+    "crumbs": [
+      "aplnb"
+    ]
+  },
+  {
+    "objectID": "CHANGELOG.html",
+    "href": "CHANGELOG.html",
+    "title": "Release notes",
+    "section": "",
+    "text": "Rename aplnb to iversonnb and add J language support via libj (#8)\nAdd aplkernel clikernel/MCP worker for persistent APL sessions, and track interpreter resets via AplError.reset with socket timeout lifted after startup (#7)\n\n\n\n\n\n\n\n\nReplace pynapl dependency with native RIDE protocol client (#3)\nAdd Pythonic Apl API (__call__, __getitem__, __setitem__, fn, context manager), rewrite README, and improve lb.js (dark mode, overlay toggle, Monaco support) (#4)\nRender APL output in SAX2 font via _repr_html_ instead of plain print (#5)\nSupport APL comments (#2)\nadd lb.js (#1)\n\n\n\n\n\nSet body padding instead of margin (#6), thanks to @curtis-allan\n\n\n\n\n\n\nInit release"
+  },
+  {
+    "objectID": "CHANGELOG.html#section",
+    "href": "CHANGELOG.html#section",
+    "title": "Release notes",
+    "section": "",
+    "text": "Rename aplnb to iversonnb and add J language support via libj (#8)\nAdd aplkernel clikernel/MCP worker for persistent APL sessions, and track interpreter resets via AplError.reset with socket timeout lifted after startup (#7)"
+  },
+  {
+    "objectID": "CHANGELOG.html#section-1",
+    "href": "CHANGELOG.html#section-1",
+    "title": "Release notes",
+    "section": "",
+    "text": "Replace pynapl dependency with native RIDE protocol client (#3)\nAdd Pythonic Apl API (__call__, __getitem__, __setitem__, fn, context manager), rewrite README, and improve lb.js (dark mode, overlay toggle, Monaco support) (#4)\nRender APL output in SAX2 font via _repr_html_ instead of plain print (#5)\nSupport APL comments (#2)\nadd lb.js (#1)\n\n\n\n\n\nSet body padding instead of margin (#6), thanks to @curtis-allan"
+  },
+  {
+    "objectID": "CHANGELOG.html#section-2",
+    "href": "CHANGELOG.html#section-2",
+    "title": "Release notes",
+    "section": "",
+    "text": "Init release"
+  }
+]
