@@ -1,129 +1,178 @@
-// APL language bar by Adám Brudzewsky: https://abrudz.github.io/lb (source: https://github.com/abrudz/lb)
-// MIT License, Copyright (c) 2011-2020 Nikolay G. Nikolov and Adam Brudzevski. This is a modified copy bundled with iversonnb.
-// Changes from upstream: double backtick composes ```; insertion via insertText so undo and input events work;
-// Monaco editor support (incl. EditContext mode); dark mode; overlay/push-down toggle persisted per site;
-// idempotent injection; ResizeObserver-driven layout; @font-face with dead url() removed; skipped on quarto-rendered pages.
-; (_ => {
-	if (document.querySelector('.ngn_lb')) return
-	if (document.querySelector('meta[name=generator][content^=quarto]')) return //no bar on rendered docs pages
-	let hc = { '<': '&lt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }, he = x => x.replace(/[<&'"]/g, c => hc[c]) //html chars and escape fn
-		, tcs = '<-←xx×/\\×:-÷*O⍟[-⌹-]⌹OO○77⌈FF⌈ll⌊LL⌊T_⌶II⌶|_⊥TT⊤-|⊣|-⊢=/≠L-≠<=≤<_≤>=≥>_≥==≡=_≡7=≢Z-≢vv∨^^∧^~⍲v~⍱^|↑v|↓((⊂cc⊂(_⊆c_⊆))⊃[|⌷|]⌷A|⍋V|⍒ii⍳i_⍸ee∊e_⍷' +
-			'uu∪UU∪nn∩/-⌿\\-⍀,-⍪rr⍴pp⍴O|⌽O-⊖O\\⍉::¨""¨~:⍨~"⍨*:⍣*"⍣oo∘o:⍤o"⍤O:⍥O"⍥[\'⍞\']⍞[]⎕[:⍠:]⍠[=⌸=]⌸[<⌺>]⌺o_⍎oT⍕o-⍕<>⋄^v⋄on⍝->→aa⍺ww⍵VV∇v-∇--¯0~⍬' +
-			'AA∆^-∆A_⍙^=⍙[?⍰?]⍰:V⍢∇"⍢||∥ox¤)_⊇_)⊇V~⍫\'\'`'
-		, lbs = ['←←\nASSIGN', ' ', '++\nconjugate\nplus', '--\nnegate\nminus', '××\ndirection\ntimes', '÷÷\nreciprocal\ndivide', '**\nexponential\npower', '⍟⍟\nnatural logarithm\nlogarithm',
-			'⌹⌹\nmatrix inverse\nmatrix divide', '○○\npi times\ncircular', '!!\nfactorial\nbinomial', '??\nroll\ndeal', ' ', '||\nmagnitude\nresidue',
-			'⌈⌈\nceiling\nmaximum', '⌊⌊\nfloor\nminimum', '⊥⊥\ndecode', '⊤⊤\nencode', '⊣⊣\nsame\nleft', '⊢⊢\nsame\nright', ' ', '==\nequal', '≠≠\nunique mask\nnot equal',
-			'≤≤\nless than or equal to', '<<\nless than', '>>\ngreater than', '≥≥\ngreater than or equal to', '≡≡\ndepth\nmatch', '≢≢\ntally\nnot match', ' ', '∨∨\ngreatest common divisor/or',
-			'∧∧\nlowest common multiple/and', '⍲⍲\nnand', '⍱⍱\nnor', ' ', '↑↑\nmix\ntake', '↓↓\nsplit\ndrop', '⊂⊂\nenclose\npartioned enclose', '⊃⊃\nfirst\npick', '⊆⊆\nnest\npartition', '⌷⌷\nmaterialise\nindex', '⍋⍋\ngrade up\ngrades up',
-			'⍒⍒\ngrade down\ngrades down', ' ', '⍳⍳\nindices\nindices of', '⍸⍸\nwhere\ninterval index', '∊∊\nenlist\nmember of', '⍷⍷\nfind', '∪∪\nunique\nunion', '∩∩\nintersection', '~~\nnot\nwithout', ' ',
-			'//\nreplicate\nReduce', '\\\\\n\expand\nScan', '⌿⌿\nreplicate first\nReduce First', '⍀⍀\nexpand first\nScan First', ' ', ',,\nravel\ncatenate/laminate',
-			'⍪⍪\ntable\ncatenate first/laminate', '⍴⍴\nshape\nreshape', '⌽⌽\nreverse\nrotate', '⊖⊖\nreverse first\nrotate first',
-			'⍉⍉\ntranspose\nreorder axes', ' ', '¨¨\nEach', '⍨⍨\nConstant\nSelf\nSwap', '⍣⍣\nRepeat\nUntil', '..\nOuter Product (∘.)\nInner Product',
-			'∘∘\nOUTER PRODUCT (∘.)\nBind\nBeside', '⍤⍤\nRank\nAtop', '⍥⍥\nOver', '@@\nAt', ' ', '⍞⍞\nSTDIN\nSTDERR', '⎕⎕\nEVALUATED STDIN\nSTDOUT\nSYSTEM NAME PREFIX', '⍠⍠\nVariant',
-			'⌸⌸\nIndex Key\nKey', '⌺⌺\nStencil', '⌶⌶\nI-Beam', '⍎⍎\nexecute', '⍕⍕\nformat', ' ', '⋄⋄\nSTATEMENT SEPARATOR', '⍝⍝\nCOMMENT', '→→\nABORT\nBRANCH', '⍵⍵\nRIGHT ARGUMENT\nRIGHT OPERAND (⍵⍵)', '⍺⍺\nLEFT ARGUMENT\nLEFT OPERAND (⍺⍺)',
-			'∇∇\nrecursion\nRecursion (∇∇)', '&&\nSpawn', ' ', '¯¯\nNEGATIVE', '⍬⍬\nEMPTY NUMERIC VECTOR', '∆∆\nIDENTIFIER CHARACTER', '⍙⍙\nIDENTIFIER CHARACTER']
-		, bqk = ' =1234567890-qwertyuiop\\asdfghjk∙l;\'zxcvbnm,./q[]+!@#$%^&*()_QWERTYUIOP|ASDFGHJKL:"ZXCVBNM<>?~{}'.replace(/∙/g, '')
-		, bqv = '`÷¨¯<≤=≥>≠∨∧×⋄⍵∊⍴~↑↓⍳○*⊢∙⍺⌈⌊_∇∆∘\'⎕⍎⍕∙⊂⊃∩∪⊥⊤|⍝⍀⌿⋄←→⌹⌶⍫⍒⍋⌽⍉⊖⍟⍱⍲!⍰W⍷R⍨YU⍸⍥⍣⊣ASDF⍢H⍤⌸⌷≡≢⊆⊇CVB¤∥⍪⍙⍠⌺⍞⍬'.replace(/∙/g, '')
-		, tc = {}, bqc = {} //tab completions and ` completions
-	for (let i = 0; i < bqk.length; i++)bqc[bqk[i]] = bqv[i]
-	for (let i = 0; i < tcs.length; i += 3)tc[tcs[i] + tcs[i + 1]] = tcs[i + 2]
-	for (let i = 0; i < tcs.length; i += 3) { let k = tcs[i + 1] + tcs[i]; tc[k] = tc[k] || tcs[i + 2] }
-	let lbh = ''; for (let i = 0; i < lbs.length; i++) {
-		let ks = []
-		for (let j = 0; j < tcs.length; j += 3)if (lbs[i][0] === tcs[j + 2]) ks.push('\n' + tcs[j] + ' ' + tcs[j + 1] + ' <tab>')
-		for (let j = 0; j < bqk.length; j++)if (lbs[i][0] === bqv[j]) ks.push('\n` ' + bqk[j])
-		lbh += '<b title="' + he(lbs[i].slice(1) + (ks.length ? '\n' + ks.join('') : '')) + '">' + lbs[i][0] + '</b>'
-	}
-	let ovl; try { ovl = localStorage.getItem('ngn_lb_overlay') === '1' } catch (e) { ovl = !1 } //overlay mode: bar covers the top instead of pushing the page down
-	let d = document, el = d.createElement('div'); el.innerHTML =
-		`<div class=ngn_lb><span class=ngn_x title=Close>❎</span><span class=ngn_o title="Toggle overlay/push-down">${ovl ? '▼' : '▲'}</span>${lbh}</div>
- <style>
-  .ngn_lb{position:fixed;top:0;left:0;right:0;background-color:#eee;color:#000;cursor:default;z-index:2147483647;
-    font-family:"DejaVu Sans Mono",monospace;border-bottom:solid #999 1px;padding:2px 2px 0 2px;word-wrap:break-word;}
-  .ngn_lb b{cursor:pointer;padding:0 1px;font-weight:normal}
-  .ngn_lb b:hover,.ngn_bq .ngn_lb{background-color:#777;color:#fff}
-  .ngn_x,.ngn_o{float:right;color:#999;cursor:pointer;margin-top:-3px}
-  .ngn_o{margin-right:6px}
-  .ngn_o:hover{color:#00d}
-  .ngn_x:hover{color:#f00}
-  @media (prefers-color-scheme:dark){
-   .ngn_lb{background-color:#222;color:#ddd;border-bottom-color:#555}
-   .ngn_lb b:hover,.ngn_bq .ngn_lb{background-color:#bbb;color:#000}
-   .ngn_x,.ngn_o{color:#666}
-  }
- </style>`
-	d.body.appendChild(el)
-	let t, lb = el.firstChild, bqm = 0 //t:textarea or input, lb:language bar, bqm:backquote mode
-	let pd = x => x.preventDefault()
-	let ev = (x, t, f, c) => x.addEventListener(t, f, c)
-	let med = _ => { try { return window.monaco?.editor?.getEditors?.().find(e => e.hasTextFocus()) } catch (e) { } } //focused Monaco editor, if any
-	let ins = (t, s, del = 0) => { //insert s at caret (replacing selection, or del chars before it), keeping undo & input events
-		let m = med()
-		if (m) {
-			if (del) {
-				let p = m.getPosition()
-				m.executeEdits('lb', [{ range: { startLineNumber: p.lineNumber, startColumn: p.column - del, endLineNumber: p.lineNumber, endColumn: p.column }, text: s }])
-			} else m.trigger('keyboard', 'type', { text: s })
-			return
-		}
-		if (!t || t.selectionStart == null) return
-		if (del) t.selectionStart = t.selectionStart - del
-		if (!(d.execCommand && d.execCommand('insertText', !1, s))) {
-			let i = t.selectionStart
-			t.value = t.value.slice(0, i) + s + t.value.slice(t.selectionEnd)
-			t.selectionStart = t.selectionEnd = i + s.length
-			t.dispatchEvent(new Event('input', { bubbles: !0 }))
-		}
-	}
-	ev(lb, 'mousedown', x => {
-		if (x.target.classList.contains('ngn_x')) { lb.hidden = 1; upd() }
-		else if (x.target.classList.contains('ngn_o')) {
-			ovl = !ovl
-			x.target.textContent = ovl ? '▼' : '▲'
-			try { localStorage.setItem('ngn_lb_overlay', ovl ? '1' : '0') } catch (e) { }
-			upd()
-		} else if (x.target.nodeName === 'B') {
-			let s = x.target.textContent, m = med()
-			if (m) { m.focus(); ins(t, s) }
-			else if (t && t.selectionStart != null) { t.focus(); ins(t, s) }
-		}
-		pd(x) //always: clicking the bar must never steal focus
-	})
-	let fk = x => {
-		let t = x.target, m = med(), i, v
-		if (m) { let p = m.getPosition(); i = p.column - 1; v = m.getModel().getLineContent(p.lineNumber) }
-		else { i = t.selectionStart; v = t.value }
-		if (bqm) {
-			let c = bqc[x.key]
-			if (x.key === '`') {
-				ins(t, '```')
-				if (m) { let p = m.getPosition(); m.setPosition({ lineNumber: p.lineNumber, column: p.column - 2 }) }
-				else t.selectionStart = t.selectionEnd = i + 1
-				bqm = 0
-				d.body.classList.remove('ngn_bq')
-				pd(x)
-				return !1
-			}
-			if (x.which > 31) { bqm = 0; d.body.classList.remove('ngn_bq') }
-			if (c) { ins(t, c); pd(x); return !1 }
-		}
-		if (!x.ctrlKey && !x.shiftKey && !x.altKey && !x.metaKey) {
-			if ("`½²^º§ùµ°".indexOf(x.key) > -1) {
-				bqm = 1; d.body.classList.add('ngn_bq'); pd(x); // ` or other trigger symbol pressed, wait for next key
-			} else if (x.key == "Tab") {
-				let c = i >= 2 && tc[v.slice(i - 2, i)]
-				if (c) { ins(t, c, 2); pd(x) }
-			}
-		}
-	}
-	let ff = x => {
-		let t0 = x.target, nn = t0.nodeName.toLowerCase()
-		if (nn !== 'textarea' && (nn !== 'input' || t0.type !== 'text' && t0.type !== 'search')) return
-		t = t0; if (!t.ngn) { t.ngn = 1; ev(t, 'keydown', fk) }
-	}
-	let upd = _ => { d.body.style.paddingTop = ovl ? '' : lb.clientHeight + 'px' }
-	upd(); (window.ResizeObserver ? new ResizeObserver(upd).observe(lb) : ev(window, 'resize', upd))
-	ev(d, 'focus', ff, !0); let ae = d.activeElement; ae && ff({ type: 'focus', target: ae })
-	ev(d, 'keydown', x => { if (!x.target.ngn && x.target.closest?.('.monaco-editor')) fk(x) }, !0) //EditContext-mode Monaco has no textarea for ff to register
-})();
+// Based on Adám Brudzewsky's APL language bar: https://abrudz.github.io/lb
+// MIT License, Copyright (c) 2011-2020 Nikolay G. Nikolov and Adam Brudzevski.
+// MiniAPL name completion, editor adapters, dark mode and overlay layout by aplnb.
+((symbols, input) => {
+    const d = document;
+    if (d.querySelector('.ngn_lb') || d.querySelector('meta[name=generator][content^=quarto]')) return;
 
+    const {inCode, aplStart, entry} = input(symbols);
+
+    function textareaRect(t) {
+        const mirror = d.createElement('div'), caret = d.createElement('span'), css = getComputedStyle(t), rect = t.getBoundingClientRect();
+        for (const p of ['font', 'lineHeight', 'letterSpacing', 'padding', 'border', 'boxSizing', 'width', 'tabSize']) mirror.style[p] = css[p];
+        Object.assign(mirror.style, {position: 'fixed', visibility: 'hidden', whiteSpace: 'pre-wrap', overflowWrap: 'break-word',
+            left: `${rect.left - t.scrollLeft}px`, top: `${rect.top - t.scrollTop}px`});
+        mirror.textContent = t.value.slice(0, t.selectionStart);
+        caret.textContent = '\u200b';
+        mirror.append(caret);
+        d.body.append(mirror);
+        const result = caret.getBoundingClientRect();
+        mirror.remove();
+        return result;
+    }
+
+    function editor(target) {
+        if (target.closest?.('.text_cell, .jp-MarkdownCell')) return;
+        const m = window.monaco?.editor?.getEditors?.().find(e => e.hasTextFocus());
+        if (m) {
+            const model = m.getModel(), p = m.getPosition(), selection = m.getSelection();
+            if (model.getLanguageId() === 'markdown' || m.getOption(window.monaco.editor.EditorOption.readOnly)) return;
+            return {id: m, text: model.getValue(), pos: model.getOffsetAt(p), empty: selection.isEmpty(), apl: model.getLanguageId() === 'apl',
+                rect: () => {
+                    const r = m.getDomNode().getBoundingClientRect(), c = m.getScrolledVisiblePosition(p);
+                    return {left: r.left + c.left, bottom: r.top + c.top + c.height};
+                },
+                insert: (text, from = model.getOffsetAt(selection.getStartPosition())) => {
+                    const a = model.getPositionAt(from), b = selection.getEndPosition();
+                    m.pushUndoStop();
+                    m.executeEdits('aplnb', [{range: {startLineNumber: a.lineNumber, startColumn: a.column,
+                        endLineNumber: b.lineNumber, endColumn: b.column}, text}], () => {
+                        const end = model.getPositionAt(from + text.length);
+                        return [new window.monaco.Selection(end.lineNumber, end.column, end.lineNumber, end.column)];
+                    });
+                    m.pushUndoStop();
+                    m.focus();
+                }};
+        }
+        const view = target.closest?.('.cm-editor')?.querySelector('.cm-content')?.cmTile?.view;
+        if (view) {
+            if (view.state.readOnly) return;
+            const sel = view.state.selection.main;
+            return {id: view, text: view.state.doc.toString(), pos: sel.head, empty: sel.empty,
+                rect: () => view.coordsAtPos(sel.head),
+                insert: (text, from = sel.from) => {
+                    view.dispatch({changes: {from, to: sel.to, insert: text}, selection: {anchor: from + text.length}, userEvent: 'input.complete'});
+                    view.focus();
+                }};
+        }
+        if (target.tagName !== 'TEXTAREA' || target.readOnly || target.disabled) return;
+        return {id: target, text: target.value, pos: target.selectionStart, empty: target.selectionStart === target.selectionEnd,
+            rect: () => textareaRect(target),
+            insert: (text, from = target.selectionStart) => {
+                target.focus();
+                target.selectionStart = from;
+                d.execCommand('insertText', false, text);
+            }};
+    }
+
+    const host = d.createElement('div');
+    host.innerHTML = `<div class="ngn_lb" aria-label="APL symbols"><button class="ngn_x" title="Close symbol bar">×</button><button class="ngn_o" title="Toggle overlay/push-down"></button></div>
+        <div class="aplnb_choices" role="group" aria-label="APL symbol completions" hidden></div>
+        <style>
+        .ngn_lb,.aplnb_choices{background:#eee;color:#111;font:15px 'SAX2',monospace;z-index:2147483647}
+        .ngn_lb{position:fixed;top:0;left:0;right:0;border-bottom:1px solid #999;padding:2px}
+        .ngn_lb button,.aplnb_choices button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:2px 4px}
+        .ngn_lb button:hover,.aplnb_choices button:hover{background:#777;color:white}
+        .ngn_x,.ngn_o{float:right}
+        .aplnb_choices{position:fixed;max-height:240px;max-width:calc(100vw - 16px);overflow:auto;border:1px solid #888;border-radius:4px;box-shadow:0 3px 12px #0003;padding:4px}
+        .aplnb_choices button{display:block;width:100%;text-align:left;white-space:nowrap}
+        .aplnb_choices small{display:block;padding:4px}
+        @media(prefers-color-scheme:dark){.ngn_lb,.aplnb_choices{background:#222;color:#ddd}.ngn_lb button:hover,.aplnb_choices button:hover{background:#bbb;color:#111}}
+        </style>`;
+    d.body.append(host);
+    const bar = host.querySelector('.ngn_lb'), tip = host.querySelector('.aplnb_choices'), toggle = bar.querySelector('.ngn_o');
+    let overlay = false, active, lastEditor, choice, keyInput = false;
+    const originalPadding = d.body.style.paddingTop;
+    try { overlay = localStorage.getItem('ngn_lb_overlay') === '1'; } catch {}
+    function layout() {
+        toggle.textContent = overlay ? '▼' : '▲';
+        d.body.style.paddingTop = overlay || bar.hidden ? originalPadding : `${bar.offsetHeight}px`;
+    }
+    function button(glyph, name) {
+        const b = d.createElement('button');
+        b.type = 'button'; b.textContent = glyph; b.title = name; b.dataset.glyph = glyph;
+        return b;
+    }
+    for (const [glyph, names] of symbols) bar.append(button(glyph, names));
+    new ResizeObserver(layout).observe(bar);
+    layout();
+
+    function cancel() { active = undefined; choice = undefined; tip.hidden = true; }
+    function show(e, item) {
+        if (choice?.item.query !== item.query) {
+            tip.replaceChildren();
+            for (const [glyph, name] of item.found) {
+                const b = button(glyph, name);
+                b.textContent = `${glyph}  ${name}`;
+                tip.append(b);
+            }
+            if (!item.found.length) {
+                const note = d.createElement('small'); note.textContent = 'Unknown symbol'; tip.append(note);
+            }
+        }
+        choice = {e, item};
+        tip.hidden = false;
+        const r = e.rect();
+        tip.style.left = `${Math.max(4, Math.min(r.left, innerWidth - tip.offsetWidth - 8))}px`;
+        tip.style.top = `${Math.max(bar.hidden || overlay ? 4 : bar.offsetHeight, Math.min(r.bottom + 4, innerHeight - tip.offsetHeight - 8))}px`;
+    }
+    function refresh(target) {
+        const e = editor(target), item = e && entry(e);
+        if (item && active?.id === e.id && active.start === item.start) show(e, item);
+        else cancel();
+    }
+    bar.addEventListener('mousedown', ev => {
+        ev.preventDefault();
+        const b = ev.target.closest('button');
+        if (b?.classList.contains('ngn_x')) { bar.hidden = true; layout(); }
+        else if (b === toggle) {
+            overlay = !overlay;
+            try { localStorage.setItem('ngn_lb_overlay', overlay ? '1' : '0'); } catch {}
+            layout();
+        } else if (b?.dataset.glyph && lastEditor) lastEditor.insert(b.dataset.glyph);
+        cancel();
+    });
+    tip.addEventListener('mousedown', ev => {
+        ev.preventDefault();
+        const b = ev.target.closest('button');
+        if (b && choice) choice.e.insert(b.dataset.glyph, choice.item.start);
+        cancel();
+    });
+    d.addEventListener('focusin', ev => { lastEditor = editor(ev.target); cancel(); });
+    d.addEventListener('pointerdown', ev => { if (!host.contains(ev.target)) cancel(); }, true);
+    d.addEventListener('pointerup', ev => { if (!host.contains(ev.target)) lastEditor = editor(ev.target); });
+    for (const event of ['paste', 'cut', 'compositionstart', 'focusout']) d.addEventListener(event, cancel, true);
+    d.addEventListener('input', ev => {
+        if (!keyInput || ev.inputType !== 'insertText' && ev.inputType !== 'deleteContentBackward') cancel();
+        keyInput = false;
+        requestAnimationFrame(() => { lastEditor = editor(ev.target); refresh(ev.target); });
+    });
+    d.addEventListener('keyup', ev => { keyInput = false; lastEditor = editor(ev.target); if (active) refresh(ev.target); });
+    window.addEventListener('keydown', ev => {
+        keyInput = false;
+        if (['Shift', 'Control', 'Alt', 'Meta'].includes(ev.key)) return;
+        const e = editor(ev.target);
+        if (!e || ev.isComposing || ev.defaultPrevented) { cancel(); return; }
+        lastEditor = e;
+        const item = entry(e), plain = !ev.ctrlKey && !ev.altKey && !ev.metaKey;
+        const tab = ev.key === 'Tab' && plain && !ev.shiftKey, enter = ev.key === 'Enter';
+        const typed = active?.id === e.id && active.start === item?.start;
+        const delimiter = plain && ev.key.length === 1 && !/[a-z]/i.test(ev.key);
+        if (item && (tab || typed && (enter || delimiter))) {
+            if (item.found.length === 1) {
+                e.insert(item.found[0][0], item.start);
+                cancel();
+            } else if (tab) {
+                active = {id: e.id, start: item.start};
+                show(e, item);
+            }
+            if (tab) { ev.preventDefault(); ev.stopImmediatePropagation(); return; }
+        }
+        if (ev.key === '`' && plain) {
+            const updated = editor(ev.target), body = aplStart(updated);
+            if (body >= 0 && updated.empty && inCode(updated.text.slice(body, updated.pos))) active = {id: updated.id, start: updated.pos};
+            else cancel();
+        } else if (!(typed && plain && (/^[a-z]$/i.test(ev.key) || ev.key === 'Backspace'))) cancel();
+        keyInput = plain && (ev.key.length === 1 || ev.key === 'Backspace');
+    }, true);
+})

@@ -4,7 +4,7 @@ project:
 website:
   title: "aplnb"
   site-url: "https://answerdotai.github.io/aplnb"
-  description: "Dyalog APL in notebooks, with apl magics for Jupyter and IPython"
+  description: "MiniAPL in notebooks, with apl magics for Jupyter and IPython"
   repo-branch: main
   repo-url: "https://github.com/answerdotai/aplnb"
 
