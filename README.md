@@ -240,9 +240,9 @@ Use a session as a context manager (`with Session() as apl:`), or close it when 
 apl.close()
 ```
 
-## Dyalog reference sessions
+## Dyalog
 
-Use `aplnb.dyalog` when you need Dyalog as an independent reference interpreter. Dyalog must be installed separately. This session API does not change the `%apl` or `%%apl` magics, which continue to use MiniAPL:
+Use `aplnb.dyalog` when you need a concise Python API for Dyalog (which must be installed separately).
 
 ``` python
 from aplnb.dyalog import Apl
