@@ -240,6 +240,24 @@ Use a session as a context manager (`with Session() as apl:`), or close it when 
 apl.close()
 ```
 
+## Dyalog reference sessions
+
+Use `aplnb.dyalog` when you need Dyalog as an independent reference interpreter. Dyalog must be installed separately. This session API does not change the `%apl` or `%%apl` magics, which continue to use MiniAPL:
+
+``` python
+from aplnb.dyalog import Apl
+```
+
+``` python
+with Apl() as dyalog:
+    total = dyalog.pyval('+/⍳10')
+total
+```
+
+    55
+
+`pyval` returns JSON-converted Python values. `run` returns session output as text. See [Dyalog sessions](https://answerdotai.github.io/aplnb/dyalog.html) for assignment, function calls and error handling.
+
 ## Errors and interruption
 
 APL errors raise `miniapl.AplError`. The magics display output produced before the error. Incomplete input raises a syntax error without resetting the workspace.
