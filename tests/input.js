@@ -6,10 +6,21 @@ QUnit.test('MiniAPL names and aliases', assert => {
 
 QUnit.test('exact names, prefixes and abbreviations', assert => {
     for (const [query, glyph] of [['io', '⍳'], ['RHO', '⍴'], ['lar', '←'], ['grup', '⍋'],
-        ['scan', '\\'], ['scanfirst', '⍀'], ['alphaalpha', '⍺⍺']])
+        ['scan', '\\'], ['scanfirst', '⍀'], ['alphaunderbar', '⍶']])
         assert.deepEqual(matches(query).map(([g]) => g), [glyph], query);
     assert.deepEqual(matches('sca').map(([g]) => g), ['\\', '⍀'], 'ambiguous prefix');
     assert.deepEqual(matches('notasymbol'), [], 'unknown name');
+});
+
+QUnit.test('physical Alt chords cover the shared keyboard', assert => {
+    const codes = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'].map(c => 'Key' + c)
+        .concat([...'0123456789'].map(c => 'Digit' + c), 'Backquote', 'Minus', 'Equal', 'BracketLeft',
+            'BracketRight', 'Backslash', 'Semicolon', 'Quote', 'Comma', 'Period', 'Slash');
+    const found = codes.flatMap(code => [false, true].map(shiftKey => chord({code, shiftKey}))).filter(Boolean);
+    assert.deepEqual(found.sort(), Object.values(keyboard).sort());
+    assert.equal(chord({code: 'Minus', key: '–', shiftKey: false}), '×', 'ignore Option-transformed key');
+    assert.equal(chord({code: 'KeyA', shiftKey: true}), '⍶');
+    assert.equal(chord({code: 'BracketLeft', shiftKey: false}), undefined, 'vacant chord');
 });
 
 const at = (text, extra = {}) => entry({text, pos: text.length, empty: true, ...extra});

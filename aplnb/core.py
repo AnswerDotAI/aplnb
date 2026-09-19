@@ -42,7 +42,8 @@ def apl(self:APLMagic, line, cell=None):
     if self.session is None: self.session = Session()
     if not self._loaded:
         js = files('aplnb')
-        display(Javascript(f"{(js/'lb.js').read_text()}({json.dumps(symbols)}, {(js/'input.js').read_text()})"))
+        keyboard = (files('miniapl')/'keyboard.json').read_text()
+        display(Javascript(f"{(js/'lb.js').read_text()}({json.dumps(symbols)}, {(js/'input.js').read_text()}, {keyboard})"))
         display(HTML(_css))
         self._loaded = True
     code = line if cell is None else cell.rstrip()

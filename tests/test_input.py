@@ -10,6 +10,7 @@ from miniapl import Session, symbols
 from aplnb.core import APLMagic
 
 pytestmark = pytest.mark.asyncio
+keyboard = (files('miniapl')/'keyboard.json').read_text()
 
 
 @pytest_asyncio.fixture
@@ -21,11 +22,16 @@ async def page():
 async def test_input(page):
     source = (files('aplnb')/'input.js').read_text()
     tests = Path(__file__).with_name('input.js').read_text()
-    result = await page.run_qunit(f'const symbols = {json.dumps(symbols)}; const {{matches, entry}} = {source}(symbols);\n{tests}')
+    result = await page.run_qunit(f'const symbols = {json.dumps(symbols)}, keyboard = {keyboard}; '
+        f'const {{matches, entry, chord}} = {source}(symbols, keyboard);\n{tests}')
     assert result['status'] == 'passed', result
 
 
-editors = dict(codemirror=r"""
+editors = dict(textarea=r"""
+    const view = mount.appendChild(document.createElement('textarea'));
+    window.setEditor = text => { view.value = text; view.selectionStart = view.selectionEnd = text.length; view.focus(); };
+    window.readEditor = () => view.value;
+""", codemirror=r"""
     const {EditorView, basicSetup} = await import('https://esm.sh/codemirror@6.0.2');
     const view = new EditorView({extensions: basicSetup, parent: mount});
     window.setEditor = text => {
@@ -76,3 +82,25 @@ async def test_editor(page, editor):
     await page.press('Enter', shift=True)
     await page.Input.dispatchKeyEvent(type='keyUp', key='Shift', windowsVirtualKeyCode=16)
     assert await page.eval('window.submitted') == '%%apl\n⍴'
+
+    async def chord(code, key, shift=False, side='Left'):
+        modifiers = 1 | (8 if shift else 0)
+        await page.Input.dispatchKeyEvent(type='rawKeyDown', code=f'Alt{side}', key='Alt', modifiers=1, location=1 if side=='Left' else 2)
+        await page.Input.dispatchKeyEvent(type='rawKeyDown', code=code, key=key, modifiers=modifiers)
+        await page.Input.dispatchKeyEvent(type='keyUp', code=code, key=key, modifiers=modifiers)
+        await page.Input.dispatchKeyEvent(type='keyUp', code=f'Alt{side}', key='Alt', location=1 if side=='Left' else 2)
+
+    await page.eval(r"setEditor('%%apl\n')")
+    for code, key, shift in [('KeyH', '˙', False), ('Minus', '–', False), ('KeyA', 'Å', True), ('BracketRight', '‘', False)]:
+        await chord(code, key, shift)
+    assert await page.eval('readEditor()') == '%%apl\n←×⍶⎕'
+    await page.press('z', mod=True)
+    assert await page.eval('readEditor()') == '%%apl\n←×⍶'
+    for text in ["%%apl\n'", '%%apl\n⍝ ', '%apl ', 'v = %apl ']:
+        await page.eval(f'setEditor({json.dumps(text)})')
+        await chord('Minus', '–')
+        assert await page.eval('readEditor()') == text + '×'
+    for text, side in [('%%apl\n', 'Right'), ('ordinary_python', 'Left')]:
+        await page.eval(f'setEditor({json.dumps(text)})')
+        await chord('Minus', '–', side=side)
+        assert await page.eval('readEditor()') == text

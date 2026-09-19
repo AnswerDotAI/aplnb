@@ -84,6 +84,8 @@ v.apl, exact.apl
 
 ## The `apl` magics
 
+Hold **left Alt/Option** for [MiniAPL’s glyph keyboard](https://answerdotai.github.io/miniapl/keyboard.html): Alt-h `←`, Alt-minus `×`, Alt-equals `÷`, Alt-Shift-a `⍶`. Right Option keeps its native behavior. Chords work in APL input, including strings and comments.
+
 Type a backtick followed by a MiniAPL symbol name: `` `io `` then Tab inserts `⍳`, and `` 2`times3 `` becomes `2×3`. Suggestions appear beside the cursor as you type. Click a suggestion or keep typing to resolve an ambiguous name. Names and aliases come from MiniAPL’s REPL catalogue.
 
 Completion is active in `%%apl` cells and on `%apl` lines, including `x = %apl ...`. Ordinary Python and Markdown input is unchanged. Strings, comments and pasted text are not expanded. Tab explicitly completes an existing name. Enter accepts a unique match before the notebook’s normal newline or execution action. Escape or cursor movement cancels automatic expansion.
@@ -240,9 +242,9 @@ Use a session as a context manager (`with Session() as apl:`), or close it when 
 apl.close()
 ```
 
-## Dyalog
+## Dyalog reference sessions
 
-Use `aplnb.dyalog` when you need a concise Python API for Dyalog (which must be installed separately).
+Use `aplnb.dyalog` when you need Dyalog as an independent reference interpreter. Dyalog must be installed separately. This session API does not change the `%apl` or `%%apl` magics, which continue to use MiniAPL:
 
 ``` python
 from aplnb.dyalog import Apl

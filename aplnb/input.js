@@ -1,4 +1,16 @@
-(symbols => {
+((symbols, keyboard) => {
+    // US physical keys, before macOS Option or another layout transforms event.key.
+    const punctuation = {Backquote: '`~', Minus: '-_', Equal: '=+', BracketLeft: '[{', BracketRight: ']}',
+        Backslash: '\\|', Semicolon: ';:', Quote: "'\"", Comma: ',<', Period: '.>', Slash: '/?'};
+    function chord(ev) {
+        const {code, shiftKey} = ev;
+        let key;
+        if (/^Key[A-Z]$/.test(code)) key = shiftKey ? code.slice(3) : code.slice(3).toLowerCase();
+        else if (/^Digit[0-9]$/.test(code)) key = shiftKey ? ')!@#$%^&*('[Number(code[5])] : code[5];
+        else key = punctuation[code]?.[Number(shiftKey)];
+        return keyboard[key];
+    }
+
     function matches(query) {
         query = query.toLowerCase();
         let best = 3, found = [];
@@ -50,5 +62,5 @@
         if (/^[a-z]*$/i.test(query)) return {start, query, found: matches(query)};
     }
 
-    return {matches, inCode, aplStart, entry};
+    return {matches, inCode, aplStart, entry, chord};
 })

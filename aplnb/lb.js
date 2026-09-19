@@ -1,11 +1,12 @@
 // Based on Adám Brudzewsky's APL language bar: https://abrudz.github.io/lb
 // MIT License, Copyright (c) 2011-2020 Nikolay G. Nikolov and Adam Brudzevski.
-// MiniAPL name completion, editor adapters, dark mode and overlay layout by aplnb.
-((symbols, input) => {
+// MiniAPL name completion, editor adapters, dark mode and overlay layout by Jeremy Howard.
+((symbols, input, keyboard) => {
     const d = document;
     if (d.querySelector('.ngn_lb') || d.querySelector('meta[name=generator][content^=quarto]')) return;
 
-    const {inCode, aplStart, entry} = input(symbols);
+    const {inCode, aplStart, entry, chord} = input(symbols, keyboard);
+    let leftAlt = false, rightAlt = false;
 
     function textareaRect(t) {
         const mirror = d.createElement('div'), caret = d.createElement('span'), css = getComputedStyle(t), rect = t.getBoundingClientRect();
@@ -147,13 +148,28 @@
         keyInput = false;
         requestAnimationFrame(() => { lastEditor = editor(ev.target); refresh(ev.target); });
     });
-    d.addEventListener('keyup', ev => { keyInput = false; lastEditor = editor(ev.target); if (active) refresh(ev.target); });
+    window.addEventListener('blur', () => { leftAlt = rightAlt = false; cancel(); });
+    window.addEventListener('keyup', ev => {
+        if (ev.code === 'AltLeft') leftAlt = false;
+        if (ev.code === 'AltRight') rightAlt = false;
+        keyInput = false; lastEditor = editor(ev.target); if (active) refresh(ev.target);
+    }, true);
     window.addEventListener('keydown', ev => {
         keyInput = false;
+        if (ev.code === 'AltLeft') leftAlt = true;
+        if (ev.code === 'AltRight') rightAlt = true;
         if (['Shift', 'Control', 'Alt', 'Meta'].includes(ev.key)) return;
         const e = editor(ev.target);
         if (!e || ev.isComposing || ev.defaultPrevented) { cancel(); return; }
         lastEditor = e;
+        if (leftAlt && !rightAlt && ev.altKey && !ev.ctrlKey && !ev.metaKey && !ev.getModifierState('AltGraph') && aplStart(e) >= 0) {
+            const glyph = chord(ev);
+            if (glyph) {
+                cancel();
+                e.insert(glyph);
+                ev.preventDefault(); ev.stopImmediatePropagation(); return;
+            }
+        }
         const item = entry(e), plain = !ev.ctrlKey && !ev.altKey && !ev.metaKey;
         const tab = ev.key === 'Tab' && plain && !ev.shiftKey, enter = ev.key === 'Enter';
         const typed = active?.id === e.id && active.start === item?.start;
