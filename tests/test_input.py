@@ -6,11 +6,11 @@ import pytest, pytest_asyncio
 from IPython.core.interactiveshell import InteractiveShell
 from IPython.utils.capture import capture_output
 from fastcdp import CDP
-from miniapl import Session, symbols
+from basedpl import Session, symbols
 from aplnb.core import APLMagic
 
 pytestmark = pytest.mark.asyncio
-keyboard = (files('miniapl')/'keyboard.json').read_text()
+keyboard = (files('basedpl')/'keyboard.json').read_text()
 
 
 @pytest_asyncio.fixture

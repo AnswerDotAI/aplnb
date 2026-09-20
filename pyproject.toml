@@ -10,9 +10,9 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "Apache-2.0"}
 authors = [{name = "Jeremy Howard", email = "info@answer.ai"}]
-keywords = ['nbdev', 'jupyter', 'notebook', 'python', 'apl', 'miniapl']
+keywords = ['nbdev', 'jupyter', 'notebook', 'python', 'apl', 'basedpl']
 classifiers = ["Natural Language :: English", "Intended Audience :: Developers", "Development Status :: 3 - Alpha", "Programming Language :: Python :: 3", "Programming Language :: Python :: 3 :: Only"]
-dependencies = ['fastcore', 'miniapl>=0.1.4', 'ipython']
+dependencies = ['fastcore', 'basedpl>=0.1.4', 'ipython']
 
 [project.optional-dependencies]
 dev = ['pytest', 'pytest-asyncio', 'fastcdp>=0.0.18', 'numpy']

@@ -11,7 +11,7 @@ __all__ = ['AplOut', 'APLMagic', 'create_magic', 'load_ipython_extension', 'crea
 import html, json
 from importlib.resources import files
 from fastcore.utils import *
-from miniapl import Session, AplError, symbols
+from basedpl import Session, AplError, symbols
 from IPython import get_ipython
 from IPython.display import display, Javascript, HTML
 from IPython.paths import get_ipython_dir
@@ -42,7 +42,7 @@ def apl(self:APLMagic, line, cell=None):
     if self.session is None: self.session = Session()
     if not self._loaded:
         js = files('aplnb')
-        keyboard = (files('miniapl')/'keyboard.json').read_text()
+        keyboard = (files('basedpl')/'keyboard.json').read_text()
         display(Javascript(f"{(js/'lb.js').read_text()}({json.dumps(symbols)}, {(js/'input.js').read_text()}, {keyboard})"))
         display(HTML(_css))
         self._loaded = True
