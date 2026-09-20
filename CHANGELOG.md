@@ -2,6 +2,15 @@
 
 <!-- do not remove -->
 
+## 0.3.0
+
+### New Features
+
+- Add left Alt/Option glyph chords using BasedPL shared keyboard layout for APL input ([#11](https://github.com/AnswerDotAI/aplnb/issues/11))
+- Replace Dyalog RIDE backend with BasedPL session for apl magics, moving RIDE support to aplnb.dyalog, and add symbol-name input completion ([#10](https://github.com/AnswerDotAI/aplnb/issues/10))
+- remove J and rename ([#9](https://github.com/AnswerDotAI/aplnb/issues/9))
+
+
 ## 0.2.0
 
 ### New Features
@@ -28,4 +37,3 @@
 ## 0.0.1
 
 - Init release
-
