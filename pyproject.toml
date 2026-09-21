@@ -15,7 +15,7 @@ classifiers = ["Natural Language :: English", "Intended Audience :: Developers",
 dependencies = ['fastcore', 'basedpl>=0.1.7', 'ipython']
 
 [project.optional-dependencies]
-dev = ['pytest', 'pytest-asyncio', 'fastcdp>=0.0.18', 'numpy']
+dev = ['pytest', 'pytest-asyncio', 'fastcdp>=0.0.17', 'numpy']
 
 [project.urls]
 Repository = "https://github.com/answerdotai/aplnb"
