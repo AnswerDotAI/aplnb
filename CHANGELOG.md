@@ -2,6 +2,13 @@
 
 <!-- do not remove -->
 
+## 0.3.1
+
+### New Features
+
+- Add prime glyph support and improve glyph name matching with hyphen-aware abbreviations ([#13](https://github.com/AnswerDotAI/aplnb/issues/13))
+
+
 ## 0.3.0
 
 ### New Features
