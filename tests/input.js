@@ -1,15 +1,15 @@
 QUnit.test('MiniAPL names and aliases', assert => {
-    for (const [glyph, aliases] of symbols)
-        for (const alias of aliases.split(' '))
-            assert.ok(matches(alias.replaceAll('-', '')).some(([g]) => g === glyph), alias);
+    for (const [glyph, ...names] of symbols)
+        for (const alias of names.join(' ').split(' ').filter(Boolean))
+            assert.deepEqual(matches(alias.replaceAll('-', '')).map(([g]) => g), [glyph], alias);
 });
 
 QUnit.test('exact names, prefixes and abbreviations', assert => {
-    for (const [query, glyph] of [['io', '⍳'], ['RHO', '⍴'], ['lar', '←'], ['grup', '⍋'],
+    for (const [query, glyph] of [['io', '⍳'], ['RHO', '⍴'], ['lar', '←'], ['larr', '←'], ['grup', '⍋'],
         ['scan', '\\'], ['scanfirst', '⍀'], ['alphaunderbar', '⍶']])
         assert.deepEqual(matches(query).map(([g]) => g), [glyph], query);
     assert.deepEqual(matches('sca').map(([g]) => g), ['\\', '⍀'], 'ambiguous prefix');
-    assert.deepEqual(matches('notasymbol'), [], 'unknown name');
+    for (const query of ['notasymbol', 'lg', 'lrr']) assert.deepEqual(matches(query), [], query);
 });
 
 QUnit.test('physical Alt chords cover the shared keyboard', assert => {

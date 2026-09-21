@@ -72,7 +72,7 @@ mean_native = plus.reduce() / tally
 mean_native(exact)
 ```
 
-    Fraction(7, 3)
+    Array((7, 3))
 
 The native representation uses Python numeric notation: `2` is exact and `2.` is approximate. `.apl` returns the APL display as a string:
 
@@ -181,7 +181,7 @@ Prime number sieve:
 
 ``` python
 %%apl
-primes ← {⍵×2=+⌿0=⍵∘.|⍵}⍳
+primes ← {⍵×2=+⌿0=⍵|⌝⍵}⍳
 (primes 50)~0
 ```
 
@@ -190,12 +190,21 @@ primes ← {⍵×2=+⌿0=⍵∘.|⍵}⍳
 Explanation:
 
 1.  `⍳50` generates integers 1 to 50
-2.  `⍵∘.|⍵` creates a matrix of remainders, with candidate divisors in the rows
+2.  `⍵|⌝⍵` creates a matrix of remainders, with candidate divisors in the rows
 3.  `0=` marks the entries with no remainder
 4.  `+⌿` sums columns, counting divisors for each number
 5.  `2=` selects numbers with exactly two divisors
 6.  `⍵×` keeps those numbers and replaces the rest with zero
 7.  `~0` removes the zeros
+
+The built-in prime glyph `ℙ` returns the nth prime, counting from one. Applied to `⍳15`, it produces the same list directly:
+
+``` python
+%%apl
+ℙ⍳15
+```
+
+<pre class="aplnb_out sax2">2x 3x 5x 7x 11x 13x 17x 19x 23x 29x 31x 37x 41x 43x 47x</pre>
 
 ## Using MiniAPL from Python
 

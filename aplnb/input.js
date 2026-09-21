@@ -14,14 +14,19 @@
     function matches(query) {
         query = query.toLowerCase();
         let best = 3, found = [];
-        for (const [glyph, aliases] of symbols) {
+        for (const [glyph, ...names] of symbols) {
             let rank = 3, name;
-            for (const alias of aliases.split(' ')) {
+            for (const alias of names.join(' ').split(' ').filter(Boolean)) {
                 const letters = alias.replaceAll('-', '');
-                let i = 1;
-                for (const c of letters.slice(1)) if (c === query[i]) i++;
-                const r = letters === query ? 0 : letters.startsWith(query) ? 1 :
-                    letters[0] === query[0] && i === query.length ? 2 : 3;
+                let rest = query;
+                for (const part of alias.split('-')) {
+                    let n = 0;
+                    while (n < part.length && part[n] === rest[n]) n++;
+                    if (!n) break;
+                    rest = rest.slice(n);
+                    if (!rest) break;
+                }
+                const r = letters === query ? 0 : letters.startsWith(query) ? 1 : !rest ? 2 : 3;
                 if (r < rank) { rank = r; name = alias; }
             }
             if (rank < best) { best = rank; found = []; }

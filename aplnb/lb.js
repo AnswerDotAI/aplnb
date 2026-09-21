@@ -94,7 +94,8 @@
         b.type = 'button'; b.textContent = glyph; b.title = name; b.dataset.glyph = glyph;
         return b;
     }
-    for (const [glyph, names] of symbols) bar.append(button(glyph, names));
+    for (const [glyph, ...names] of symbols)
+        bar.append(button(glyph, [...new Set(names.join(' ').split(' ').filter(Boolean))].join(' ')));
     new ResizeObserver(layout).observe(bar);
     layout();
 
