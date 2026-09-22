@@ -1,4 +1,4 @@
-"""MiniAPL in notebooks, with apl magics for Jupyter and IPython
+"""bAsedPL in notebooks, with apl magics for Jupyter and IPython
 
 Modules:
 

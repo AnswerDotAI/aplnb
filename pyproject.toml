@@ -5,17 +5,17 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "aplnb"
 dynamic = ["version"]
-description = "MiniAPL in notebooks, with apl magics for Jupyter and IPython"
+description = "bAsedPL in notebooks, with apl magics for Jupyter and IPython"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
 authors = [{name = "Jeremy Howard", email = "info@answer.ai"}]
 keywords = ['nbdev', 'jupyter', 'notebook', 'python', 'apl', 'basedpl']
 classifiers = ["Natural Language :: English", "Intended Audience :: Developers", "Development Status :: 3 - Alpha", "Programming Language :: Python :: 3", "Programming Language :: Python :: 3 :: Only"]
-dependencies = ['fastcore', 'basedpl>=0.1.7', 'ipython']
+dependencies = ['fastcore', 'basedpl>=0.1.9', 'ipython>=9.17.1']
 
 [project.optional-dependencies]
-dev = ['pytest', 'pytest-asyncio', 'fastcdp>=0.0.17', 'numpy']
+dev = ['pytest', 'pytest-asyncio', 'fastcdp>=0.0.17', 'numpy', 'pandas']
 
 [project.urls]
 Repository = "https://github.com/answerdotai/aplnb"

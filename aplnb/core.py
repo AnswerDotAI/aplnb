@@ -1,4 +1,4 @@
-"""MiniAPL magics and APL output display for Jupyter and IPython
+"""bAsedPL magics and APL output display for Jupyter and IPython
 
 Docs: https://answerdotai.github.io/aplnb/core.html.md"""
 
@@ -8,10 +8,12 @@ Docs: https://answerdotai.github.io/aplnb/core.html.md"""
 __all__ = ['AplOut', 'APLMagic', 'create_magic', 'load_ipython_extension', 'create_ipython_config']
 
 # %% ../00_core.ipynb #fe6dcafd
-import html, json
+import html, json, re
 from importlib.resources import files
 from fastcore.utils import *
 from basedpl import Session, AplError, symbols
+from basedpl.ipython import load_ipython_extension as _load_help, command_help
+from IPython.core.completer import context_matcher, SimpleCompletion
 from IPython import get_ipython
 from IPython.display import display, Javascript, HTML
 from IPython.paths import get_ipython_dir
@@ -31,24 +33,32 @@ _css = r"""<style>
 </style>"""
 
 class APLMagic:
-    "IPython APL magics sharing a lazily started MiniAPL session."
+    "IPython APL magics sharing a lazily started bAsedPL session."
     def __init__(self, session=None): self.session,self._loaded = session,False
 
+
+# %% ../00_core.ipynb #940136d6
+@patch
+def _load(self:APLMagic):
+    if self._loaded: return
+    js = files('aplnb')
+    keyboard = (files('basedpl')/'keyboard.json').read_text()
+    display(Javascript(f"{(js/'lb.js').read_text()}({json.dumps(symbols)}, {(js/'input.js').read_text()}, {keyboard})"))
+    display(HTML(_css))
+    self._loaded = True
 
 # %% ../00_core.ipynb #0b57e64c
 @patch
 def apl(self:APLMagic, line, cell=None):
     "Evaluate a line as a native value or display a cell as an APL session."
     if self.session is None: self.session = Session()
-    if not self._loaded:
-        js = files('aplnb')
-        keyboard = (files('basedpl')/'keyboard.json').read_text()
-        display(Javascript(f"{(js/'lb.js').read_text()}({json.dumps(symbols)}, {(js/'input.js').read_text()}, {keyboard})"))
-        display(HTML(_css))
-        self._loaded = True
+    self._load()
     code = line if cell is None else cell.rstrip()
     show = not (cell is not None and code.endswith(';'))
     if not show: code = code[:-1]
+    if (info := command_help(self.session, code)) is not None:
+        if show: display(info, raw=True)
+        return
     output = []
     try:
         result = (self.session.eval if cell is None else self.session.run)(code)
@@ -60,12 +70,36 @@ def apl(self:APLMagic, line, cell=None):
         if show and output: display(AplOut('\n'.join(output)))
     if cell is None: return result.value
 
+# %% ../00_core.ipynb #18ff7023
+@patch
+@context_matcher(identifier='aplnb.names')
+def complete(self:APLMagic, context):
+    "Complete visible APL names in line and cell magics."
+    empty = dict(completions=[])
+    if self.session is None: return empty
+    before = '\n'.join(context.full_text.split('\n')[:context.cursor_line] + [context.text_until_cursor])
+    if m := re.match(r'%%apl[^\S\n]*\n', before): code = before[m.end():]
+    elif m := re.match(r'\s*(?:\w+\s*=\s*)?%apl\s+', context.text_until_cursor): code = context.text_until_cursor[m.end():]
+    else: return empty
+    if any(m.end() == len(code) for m in re.finditer(r"'(?:[^']|'')*(?:'|$)|⍝[^\n]*", code)): return empty
+    start = len(code)
+    glyphs = {row[0] for row in symbols} - {'•'}
+    while start and code[start-1] not in glyphs and (code[start-1].isalnum() or code[start-1] in '_∆⍙•'): start -= 1
+    prefix = code[start:]
+    if not prefix: return empty
+    return dict(completions=[SimpleCompletion(n, type='APL name') for n in self.session.complete(prefix)],
+        matched_fragment=prefix, suppress=True)
+
 # %% ../00_core.ipynb #953c6348
 def create_magic(shell=None, session=None):
-    "Register line and cell magics with `shell`, optionally sharing a MiniAPL `session`."
+    "Register line and cell magics with `shell`, optionally sharing a bAsedPL `session`."
     if shell is None: shell = get_ipython()
     magic = APLMagic(session)
     shell.register_magic_function(magic.apl, 'line_cell', 'apl')
+    matchers = shell.Completer.custom_matchers
+    matchers[:] = [m for m in matchers if getattr(m, 'matcher_identifier', None) != 'aplnb.names']
+    matchers.append(magic.complete)
+    _load_help(shell)
     return magic
 
 

@@ -14,9 +14,9 @@
     function matches(query) {
         query = query.toLowerCase();
         let best = 3, found = [];
-        for (const [glyph, ...names] of symbols) {
+        for (const [glyph, glyphName, monad, dyad, aliases] of symbols) {
             let rank = 3, name;
-            for (const alias of names.join(' ').split(' ').filter(Boolean)) {
+            for (const alias of [glyphName, monad, dyad, aliases].join(' ').split(' ').filter(Boolean)) {
                 const letters = alias.replaceAll('-', '');
                 let rest = query;
                 for (const part of alias.split('-')) {

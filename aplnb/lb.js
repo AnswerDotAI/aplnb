@@ -1,11 +1,12 @@
 // Based on Adám Brudzewsky's APL language bar: https://abrudz.github.io/lb
 // MIT License, Copyright (c) 2011-2020 Nikolay G. Nikolov and Adam Brudzevski.
-// MiniAPL name completion, editor adapters, dark mode and overlay layout by Jeremy Howard.
+// bAsedPL name completion, editor adapters, dark mode and overlay layout by Jeremy Howard.
 ((symbols, input, keyboard) => {
     const d = document;
     if (d.querySelector('.ngn_lb') || d.querySelector('meta[name=generator][content^=quarto]')) return;
 
     const {inCode, aplStart, entry, chord} = input(symbols, keyboard);
+    const shortcuts = new Map(symbols.map(([glyph, , , , , shortcut]) => [glyph, shortcut]));
     let leftAlt = false, rightAlt = false;
 
     function textareaRect(t) {
@@ -91,11 +92,11 @@
     }
     function button(glyph, name) {
         const b = d.createElement('button');
-        b.type = 'button'; b.textContent = glyph; b.title = name; b.dataset.glyph = glyph;
+        b.type = 'button'; b.textContent = glyph; b.title = name + shortcuts.get(glyph); b.dataset.glyph = glyph;
         return b;
     }
-    for (const [glyph, ...names] of symbols)
-        bar.append(button(glyph, [...new Set(names.join(' ').split(' ').filter(Boolean))].join(' ')));
+    for (const [glyph, name, monad, dyad, aliases] of symbols)
+        bar.append(button(glyph, [...new Set([name, monad, dyad, aliases].join(' ').split(' ').filter(Boolean))].join(' ')));
     new ResizeObserver(layout).observe(bar);
     layout();
 
@@ -105,7 +106,7 @@
             tip.replaceChildren();
             for (const [glyph, name] of item.found) {
                 const b = button(glyph, name);
-                b.textContent = `${glyph}  ${name}`;
+                b.textContent = `${glyph} ${b.title}`;
                 tip.append(b);
             }
             if (!item.found.length) {

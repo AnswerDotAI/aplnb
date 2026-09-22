@@ -60,16 +60,20 @@ async def test_editor(page, editor):
     await page.set_content('<div id="mount" style="width:600px;height:200px"></div>')
     await page.eval(f'(async () => {{{editors[editor]}}})()')
     await page.eval(captured.outputs[0].data['application/javascript'])
+    assert await page.eval("document.querySelector('.ngn_lb [data-glyph=\"⍶\"]').title") == 'alpha-underbar left-operand Sa'
+    assert set((await page.eval("document.querySelector('.ngn_lb [data-glyph=\"+\"]').title")).split()) == {'add', 'conjugate', 'plus'}
     await page.eval(r"setEditor('%%apl\n')")
     await page.type('2`times3 ')
     assert await page.eval('readEditor()') == '%%apl\n2×3 '
     await page.type('`sca')
     await page.press('Tab')
     assert await page.eval('readEditor()') == '%%apl\n2×3 `sca'
-    await page.eval(r"""window.choiceButton = document.querySelector('.aplnb_choices button[title="scan-first"]')""")
+    await page.eval(r"""window.choiceButton = document.querySelector('.aplnb_choices button[data-glyph="⍀"]')""")
+    assert await page.eval('choiceButton.textContent') == '⍀ scan-first .'
+    assert await page.eval('choiceButton.title') == 'scan-first .'
     await page.press('Tab')
     assert await page.eval('choiceButton.isConnected')
-    await page.click('.aplnb_choices button[title="scan-first"]')
+    await page.click('.aplnb_choices button[data-glyph="⍀"]')
     assert await page.eval('readEditor()') == '%%apl\n2×3 ⍀'
     await page.press('z', mod=True)
     assert await page.eval('readEditor()') == '%%apl\n2×3 `sca'

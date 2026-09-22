@@ -1,6 +1,6 @@
-QUnit.test('MiniAPL names and aliases', assert => {
-    for (const [glyph, ...names] of symbols)
-        for (const alias of names.join(' ').split(' ').filter(Boolean))
+QUnit.test('bAsedPL names and aliases', assert => {
+    for (const [glyph, name, monad, dyad, aliases] of symbols)
+        for (const alias of [name, monad, dyad, aliases].join(' ').split(' ').filter(Boolean))
             assert.deepEqual(matches(alias.replaceAll('-', '')).map(([g]) => g), [glyph], alias);
 });
 

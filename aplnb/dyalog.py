@@ -1,6 +1,6 @@
 """Run Dyalog APL through RIDE for reference checks.
 
-Import `Apl` and `AplError` from `aplnb.dyalog`. Sessions return Dyalog output or JSON-converted Python values, not MiniAPL arrays. Importing this module does not start Dyalog or register notebook magics.
+Import `Apl` and `AplError` from `aplnb.dyalog`. Sessions return Dyalog output or JSON-converted Python values, not bAsedPL arrays. Importing this module does not start Dyalog or register notebook magics.
 
 Install Dyalog separately. The examples use a local interpreter and run with `nbdev-test --flags dyalog`. The default test run skips them.
 
