@@ -2,6 +2,13 @@
 
 <!-- do not remove -->
 
+## 0.3.2
+
+### New Features
+
+- Rename MiniAPL to bAsedPL, add APL name completion and ]help support to magics ([#14](https://github.com/AnswerDotAI/aplnb/issues/14))
+
+
 ## 0.3.1
 
 ### New Features
