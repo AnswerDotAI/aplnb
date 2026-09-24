@@ -4,6 +4,6 @@ Modules:
 
 - `aplnb.dyalog`: Run Dyalog APL through RIDE for reference checks."""
 
-__version__ = "0.3.3"
+__version__ = "0.3.4"
 
 from .core import *
