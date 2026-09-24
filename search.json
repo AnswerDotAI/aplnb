@@ -1,0 +1,311 @@
+[
+  {
+    "objectID": "core.html",
+    "href": "core.html",
+    "title": "aplnb core",
+    "section": "",
+    "text": "aplnb adds %apl and %%apl magics to IPython. A basedpl.Session owns the APL workspace, native values, errors and interruption. aplnb renders the captured output and loads the language bar.\nThe line magic returns a native array or function. The cell magic displays APL session output, including implicit expression results. Both use the same session.\nfrom fastcore.test import *\nfrom basedpl import Array\nfrom IPython.utils.capture import capture_output\nimport numpy as np",
+    "crumbs": [
+      "aplnb core"
+    ]
+  },
+  {
+    "objectID": "core.html#rendering-output",
+    "href": "core.html#rendering-output",
+    "title": "aplnb core",
+    "section": "Rendering output",
+    "text": "Rendering output\n\n\nsource\n\nAplOut\ndef AplOut(\n    *args, **kwargs\n):\nAPL output text, displayed in the SAX2 font where HTML is available.\n\n\nAplOut preserves APL spacing. Its HTML representation escapes the output before putting it in a &lt;pre&gt; element.\n\nout = AplOut('1 &lt; 2')\nassert '&lt;' in out._repr_html_()\nout\n\n1 &lt; 2",
+    "crumbs": [
+      "aplnb core"
+    ]
+  },
+  {
+    "objectID": "core.html#the-magics",
+    "href": "core.html#the-magics",
+    "title": "aplnb core",
+    "section": "The magics",
+    "text": "The magics\nAPLMagic accepts an existing basedpl.Session. Without one, it starts a session on first use. The language bar and SAX2 stylesheet are loaded once for each magic instance.\n\n\nsource\n\nAPLMagic\ndef APLMagic(\n    session:NoneType=None\n):\nIPython APL magics sharing a lazily started bAsedPL session.\n\n\n\n\nsource\n\nAPLMagic.apl\ndef apl(\n    line, cell:NoneType=None\n):\nEvaluate a line as a native value or display a cell as an APL session.\n\n\nCell output comes from Session.run, which includes implicit expression results. Line output comes from Session.eval, which captures explicit output and returns native values. A trailing ; suppresses all cell display without skipping execution. Output produced before an error is displayed before the error is raised.\nTab completes user and system names in APL input. Completion reads the existing session without starting or evaluating it.\n\n\nsource\n\nAPLMagic.complete\ndef complete(\n    context\n):\nComplete visible APL names in line and cell magics.\n\n\n\n\nsource\n\ncreate_magic\ndef create_magic(\n    shell:NoneType=None, session:NoneType=None\n):\nRegister line and cell magics with shell, optionally sharing a bAsedPL session.\n\n\nThe cell magic displays each expression. Assignments remain silent.\n\n%%apl\nm←2 3⍴⍳6\nm×10\n\n10 20 30\n40 50 60\n\n\nThe line magic returns a native basedpl.Array. Use .np or .py for conversion. Comments are parsed by bAsedPL, including ⍝ inside quoted strings.\n\nz = %apl m ⍝ a matrix\ntest_is(type(z), Array)\nnp.testing.assert_array_equal(z.np, [[1, 2, 3], [4, 5, 6]])\ntest_eq(magic.apl(\"'a⍝b' ⍝ comment\").py, 'a⍝b')\nz\n\n[[1., 2., 3.], [4., 5., 6.]]\n\n\nPython values can be bound through the same session. Python integers stay exact.\n\nmagic.session(x=np.arange(1, 4))\nvalue = %apl +/x\ntest_eq(value.py, 6)\ntest_is(type(value.py), int)\nvalue\n\nArray(6)\n\n\nbAsedPL’s display commands also work in a cell.\n\n%%apl\n]Display (1 2)'ab'\n\n┌→───────────┐\n│ ┌→──┐ ┌→─┐ │\n│ │1 2│ │ab│ │\n│ └~──┘ └──┘ │\n└∊───────────┘\n\n\nA suppressed cell still updates the workspace.\n\n%%apl\nquiet←7;",
+    "crumbs": [
+      "aplnb core"
+    ]
+  },
+  {
+    "objectID": "core.html#names-and-help",
+    "href": "core.html#names-and-help",
+    "title": "aplnb core",
+    "section": "Names and help",
+    "text": "Names and help\nUse ]help name for help and ]help name -source for source, in either magic. Leading definition comments supply help. Inspection leaves the function uncalled.\n\n%%apl\ndouble←{⍝ Double the argument\n⎕←'called' ⋄ ⍵×2}\n\n\nwith capture_output() as cap: magic.apl(']help double')\nassert 'Double the argument' in cap.outputs[0].data['text/markdown']\nwith capture_output() as cap: magic.apl('', ']help double -source')\nassert \"⎕←'called'\" in cap.outputs[0].data['text/markdown']\ntest_eq(len(cap.outputs), 1)\n\nCompletion follows the magic’s workspace, including names defined after registration. Quoted text and comments stay literal.\n\nfrom IPython.core.completer import provisionalcompleter\n\n\nshell = get_ipython()\nfor text, expected in [('%apl dou', 'double'), ('v = %apl dou', 'double'), ('%%apl\\n1+•sr', '•src')]:\n    with provisionalcompleter(): matches = list(shell.Completer.completions(text, len(text)))\n    assert expected in [m.text for m in matches]\nfor text in [\"%%apl\\n'dou\", '%%apl\\n⍝ dou', 'ordinary_python']:\n    with provisionalcompleter(): matches = list(shell.Completer.completions(text, len(text)))\n    assert not any(m.type == 'APL name' for m in matches)",
+    "crumbs": [
+      "aplnb core"
+    ]
+  },
+  {
+    "objectID": "core.html#errors-and-session-state",
+    "href": "core.html#errors-and-session-state",
+    "title": "aplnb core",
+    "section": "Errors and session state",
+    "text": "Errors and session state\nErrors retain source locations and leave completed assignments in the workspace. Incomplete input raises a syntax error without replacing the session.\n\nwith capture_output() as cap: test_fail(lambda: magic.apl('', '⎕←42 ⋄ 1÷0'), contains='DOMAIN ERROR')\nassert '42' in cap.outputs[0].data['text/html']\ntest_fail(lambda: magic.apl('', '{⍵+1'), contains='SYNTAX ERROR')\ntest_eq(magic.apl('quiet').py, 9)\n\nSet magic.session.timeout to a per-evaluation deadline in seconds. Ctrl-C interrupts the evaluation. Output captured before cooperative cancellation is displayed. The Rust worker thread retains the session after cancellation. Native-library calls and individual BigInt operations can delay cancellation; the thread is never forcibly killed.",
+    "crumbs": [
+      "aplnb core"
+    ]
+  },
+  {
+    "objectID": "core.html#installation",
+    "href": "core.html#installation",
+    "title": "aplnb core",
+    "section": "Installation",
+    "text": "Installation\n%load_ext aplnb registers the magics in the current kernel. aplnb_install adds the extension to the default IPython profile. Registration does not start an APL worker.\n\n\nsource\n\nload_ipython_extension\ndef load_ipython_extension(\n    ipython\n):\nRegister the APL magics when IPython loads this extension.\n\n\n\n\nsource\n\ncreate_ipython_config\ndef create_ipython_config():\nCalled by aplnb_install to install magic",
+    "crumbs": [
+      "aplnb core"
+    ]
+  },
+  {
+    "objectID": "core.html#symbol-input",
+    "href": "core.html#symbol-input",
+    "title": "aplnb core",
+    "section": "Symbol input",
+    "text": "Symbol input\nThe browser input method uses bAsedPL’s symbol names and aliases. It is active in %%apl cells, %apl lines and Monaco editors configured for APL. Matching prefers exact names, then prefixes, then abbreviations. A unique match is accepted with Tab or a delimiter. Enter accepts it before the notebook’s usual newline or execution action. Ambiguous matches remain unchanged and appear in a clickable list.\nStrings, comments and pasted text are not expanded. Cursor movement and Escape cancel automatic expansion. The clickable language bar can still insert literal glyphs.\nHold left Alt/Option to type glyphs using bAsedPL’s keyboard: Alt-h ←, Alt-minus ×, Alt-equals ÷, Alt-Shift-a ⍶. These chords insert literal glyphs, including inside APL strings and comments. Right Option keeps its native keyboard behavior. The glyph map is shared with the bAsedPL REPL.\nThe JavaScript assertions live in tests/input.js. Pytest runs them through fastcdp’s QUnit runner using bAsedPL’s actual symbol catalogue. Editor integration checks exercise CodeMirror, Monaco and textarea. Install the dev extra and Chrome for Testing (fastcdp-setup --install stable), then run pytest -q. QUnit and the editor fixtures load from CDNs. Node is not required.",
+    "crumbs": [
+      "aplnb core"
+    ]
+  },
+  {
+    "objectID": "core.html#cleanup",
+    "href": "core.html#cleanup",
+    "title": "aplnb core",
+    "section": "Cleanup",
+    "text": "Cleanup\n\nmagic.session.close()",
+    "crumbs": [
+      "aplnb core"
+    ]
+  },
+  {
+    "objectID": "dyalog.html",
+    "href": "dyalog.html",
+    "title": "Dyalog sessions",
+    "section": "",
+    "text": "Import Apl and AplError from aplnb.dyalog. Sessions return Dyalog output or JSON-converted Python values, not bAsedPL arrays. Importing this module does not start Dyalog or register notebook magics.\nInstall Dyalog separately. The examples use a local interpreter and run with nbdev-test --flags dyalog. The default test run skips them.\nfrom fastcore.test import *",
+    "crumbs": [
+      "Dyalog sessions"
+    ]
+  },
+  {
+    "objectID": "dyalog.html#connecting",
+    "href": "dyalog.html#connecting",
+    "title": "Dyalog sessions",
+    "section": "Connecting",
+    "text": "Connecting\n\n\nsource\n\nstart_dyalog\ndef start_dyalog(\n    dyalog:NoneType=None, # Path to the interpreter binary; `find_dyalog()` result if None\n    timeout:int=10, # Socket timeout during the startup handshake, in seconds\n):\nSpawn a Dyalog interpreter that connects back to us over RIDE; return (socket,Popen)\n\n\n\n\nsource\n\nfind_dyalog\ndef find_dyalog():\nLocate the Dyalog interpreter binary\n\n\nfind_dyalog checks the command path and standard macOS/Linux installation locations. Pass dyalog= to Apl to choose another executable. timeout bounds the startup handshake, not evaluation.\n\n\nsource\n\nride_recv\ndef ride_recv(\n    sock\n):\nReceive one RIDE message, JSON-decoded unless it’s a handshake string\n\n\n\n\nsource\n\nride_send\ndef ride_send(\n    sock, msg\n):\nSend one RIDE message: a handshake str, or a [cmd,args] list sent as JSON\n\n\nRIDE uses length-prefixed messages over a local socket. ride_run collects session output until Dyalog is ready for another expression. Interactive and incomplete-input prompts are handled by Apl.run.\n\n\nsource\n\nride_run\ndef ride_run(\n    sock, code\n):\nRun APL lines; return (output,errno) once the session is ready again\n\n\n\n\nsource\n\nAplPrompt\ndef AplPrompt(\n    ptype\n):\nA non-ready prompt: 2=⎕ input, 3=incomplete input, 4=⍞ input\n\n\n\n\nsource\n\nAplError\ndef AplError(\n    msg, reset:bool=False\n):\nA Dyalog diagnostic; reset means the interpreter was replaced and workspace state lost\n\n\n\n\nsource\n\nApl.__exit__\ndef __exit__(\n    *args\n):\n\n\n\n\nsource\n\nApl.__enter__\ndef __enter__():\n\n\n\n\nsource\n\nApl.close\ndef close():\nShut down the interpreter and close the connection\n\n\n\n\nsource\n\nApl\ndef Apl(\n    dyalog:NoneType=None, timeout:int=10\n):\nA Dyalog APL session over the RIDE protocol",
+    "crumbs": [
+      "Dyalog sessions"
+    ]
+  },
+  {
+    "objectID": "dyalog.html#evaluating-apl",
+    "href": "dyalog.html#evaluating-apl",
+    "title": "Dyalog sessions",
+    "section": "Evaluating APL",
+    "text": "Evaluating APL\n\n\nsource\n\nApl.run\ndef run(\n    code\n):\nRun code, returning session output; raises AplError on APL errors\n\n\nrun returns session output as text. Assignments persist across calls:\n\ndyalog = Apl()\nout = dyalog.run('x←1 2 3\\n+/x')\ntest_eq(out.strip(), '6')\nout\n\n'6\\n'\n\n\n\n\nsource\n\nApl.__call__\ndef __call__(\n    code\n):\nRun code, returning displayable session output, or None if there is none\n\n\nCalling a session returns AplOut, the same text with notebook display support. A silent assignment returns None:\n\ntest_is(dyalog('quiet←7'), None)\ndyalog('2×x')\n\n2 4 6",
+    "crumbs": [
+      "Dyalog sessions"
+    ]
+  },
+  {
+    "objectID": "dyalog.html#python-values",
+    "href": "dyalog.html#python-values",
+    "title": "Dyalog sessions",
+    "section": "Python values",
+    "text": "Python values\n\n\nsource\n\nApl.pyval\ndef pyval(\n    expr\n):\nEvaluate expr and return its JSON-converted Python value\n\n\npyval uses Dyalog’s JSON conversion. Scalars become Python values and numeric arrays become lists. This is the interface used by the reference checker:\n\ntest_eq(dyalog.pyval('+/x'), 6)\nmatrix = dyalog.pyval('2 3⍴⍳6')\ntest_eq(matrix, [[1,2,3], [4,5,6]])\nmatrix\n\n[[1, 2, 3], [4, 5, 6]]\n\n\n\n\nsource\n\nApl.__setitem__\ndef __setitem__(\n    nm, v\n):\n\n\n\n\nsource\n\nApl.__getitem__\ndef __getitem__(\n    expr\n):\n\n\nSquare brackets read an expression or assign a JSON-compatible Python value. Quotes in strings are escaped for APL:\n\ndyalog['values'] = [3,1,4]\ndyalog['message'] = \"can't\"\ntest_eq(dyalog['message'], \"can't\")\ntest_eq(dyalog['values'], [3,1,4])\ndyalog['values']\n\n[3, 1, 4]\n\n\n\n\nsource\n\nApl.fn\ndef fn(\n    code\n):\nA Python callable applying APL function code monadically or dyadically\n\n\nfn converts Python arguments through JSON and evaluates the function expression on each call. One argument supplies ⍵; two supply ⍺ and ⍵:\n\nmean = dyalog.fn('{(+/⍵)÷≢⍵}')\ntest_eq(mean([1,2,3]), 2)\nadd = dyalog.fn('+')\ntest_eq(add([1,2,3], 10), [11,12,13])\nadd([1,2,3], 10)\n\n[11, 12, 13]",
+    "crumbs": [
+      "Dyalog sessions"
+    ]
+  },
+  {
+    "objectID": "dyalog.html#errors-and-lifetime",
+    "href": "dyalog.html#errors-and-lifetime",
+    "title": "Dyalog sessions",
+    "section": "Errors and lifetime",
+    "text": "Errors and lifetime\nDyalog errors raise this module’s AplError, which is separate from bAsedPL’s exception. Completed assignments remain in the session:\n\nwith expect_fail(AplError, contains='DOMAIN ERROR'): dyalog.run('saved←42 ⋄ 1÷0')\ntest_eq(dyalog['saved'], 42)\ndyalog['saved']\n\n42\n\n\nInteractive ⎕ and ⍞ input is rejected. An incomplete-input prompt restarts the interpreter and raises AplError with reset=True; that restart loses the workspace.\nCall close() when finished, or use a context manager for a bounded reference check:\n\ndyalog.close()\nwith Apl() as reference: total = reference.pyval('+/⍳10')\ntest_eq(total, 55)\ntotal\n\n55",
+    "crumbs": [
+      "Dyalog sessions"
+    ]
+  },
+  {
+    "objectID": "CHANGELOG.html",
+    "href": "CHANGELOG.html",
+    "title": "Release notes",
+    "section": "",
+    "text": "Rename MiniAPL to bAsedPL, add APL name completion and ]help support to magics (#14)\n\n\n\n\n\n\n\n\nAdd prime glyph support and improve glyph name matching with hyphen-aware abbreviations (#13)\n\n\n\n\n\n\n\n\nAdd left Alt/Option glyph chords using BasedPL shared keyboard layout for APL input (#11)\nReplace Dyalog RIDE backend with BasedPL session for apl magics, moving RIDE support to aplnb.dyalog, and add symbol-name input completion (#10)\nremove J and rename (#9)\n\n\n\n\n\n\n\n\nRename aplnb to iversonnb and add J language support via libj (#8)\nAdd aplkernel clikernel/MCP worker for persistent APL sessions, and track interpreter resets via AplError.reset with socket timeout lifted after startup (#7)\n\n\n\n\n\n\n\n\nReplace pynapl dependency with native RIDE protocol client (#3)\nAdd Pythonic Apl API (__call__, __getitem__, __setitem__, fn, context manager), rewrite README, and improve lb.js (dark mode, overlay toggle, Monaco support) (#4)\nRender APL output in SAX2 font via _repr_html_ instead of plain print (#5)\nSupport APL comments (#2)\nadd lb.js (#1)\n\n\n\n\n\nSet body padding instead of margin (#6), thanks to @curtis-allan\n\n\n\n\n\n\nInit release"
+  },
+  {
+    "objectID": "CHANGELOG.html#section",
+    "href": "CHANGELOG.html#section",
+    "title": "Release notes",
+    "section": "",
+    "text": "Rename MiniAPL to bAsedPL, add APL name completion and ]help support to magics (#14)"
+  },
+  {
+    "objectID": "CHANGELOG.html#section-1",
+    "href": "CHANGELOG.html#section-1",
+    "title": "Release notes",
+    "section": "",
+    "text": "Add prime glyph support and improve glyph name matching with hyphen-aware abbreviations (#13)"
+  },
+  {
+    "objectID": "CHANGELOG.html#section-2",
+    "href": "CHANGELOG.html#section-2",
+    "title": "Release notes",
+    "section": "",
+    "text": "Add left Alt/Option glyph chords using BasedPL shared keyboard layout for APL input (#11)\nReplace Dyalog RIDE backend with BasedPL session for apl magics, moving RIDE support to aplnb.dyalog, and add symbol-name input completion (#10)\nremove J and rename (#9)"
+  },
+  {
+    "objectID": "CHANGELOG.html#section-3",
+    "href": "CHANGELOG.html#section-3",
+    "title": "Release notes",
+    "section": "",
+    "text": "Rename aplnb to iversonnb and add J language support via libj (#8)\nAdd aplkernel clikernel/MCP worker for persistent APL sessions, and track interpreter resets via AplError.reset with socket timeout lifted after startup (#7)"
+  },
+  {
+    "objectID": "CHANGELOG.html#section-4",
+    "href": "CHANGELOG.html#section-4",
+    "title": "Release notes",
+    "section": "",
+    "text": "Replace pynapl dependency with native RIDE protocol client (#3)\nAdd Pythonic Apl API (__call__, __getitem__, __setitem__, fn, context manager), rewrite README, and improve lb.js (dark mode, overlay toggle, Monaco support) (#4)\nRender APL output in SAX2 font via _repr_html_ instead of plain print (#5)\nSupport APL comments (#2)\nadd lb.js (#1)\n\n\n\n\n\nSet body padding instead of margin (#6), thanks to @curtis-allan"
+  },
+  {
+    "objectID": "CHANGELOG.html#section-5",
+    "href": "CHANGELOG.html#section-5",
+    "title": "Release notes",
+    "section": "",
+    "text": "Init release"
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "aplnb",
+    "section": "",
+    "text": "aplnb has moved into bAsedPL, and this repository is archived. The %apl and %%apl magics are now in basedpl.notebooks, and the Dyalog session API is now basedpl.dyalog. To switch:\nSee Using bAsedPL notebooks for current documentation. The rest of this page documents aplnb as it was before the move.\naplnb brings bAsedPL to Jupyter and IPython. Use %%apl for APL session output and %apl for native bAsedPL values in Python. Both share a persistent workspace.\nSee core for the implementation. For the J language, see the sibling project jnb.",
+    "crumbs": [
+      "aplnb"
+    ]
+  },
+  {
+    "objectID": "index.html#installation",
+    "href": "index.html#installation",
+    "title": "aplnb",
+    "section": "Installation",
+    "text": "Installation\nInstall aplnb and its bAsedPL runtime:\npip install aplnb\nNo separate APL installation is needed. To load the magics automatically in IPython and Jupyter, run:\naplnb_install\nOr run %load_ext aplnb in an individual notebook. The interpreter starts on the first use of a magic.",
+    "crumbs": [
+      "aplnb"
+    ]
+  },
+  {
+    "objectID": "index.html#native-arrays",
+    "href": "index.html#native-arrays",
+    "title": "aplnb",
+    "section": "Native arrays",
+    "text": "Native arrays\nThe line magic %apl returns a native basedpl.Array. Its immutable data stays in bAsedPL, retaining nesting, exact numbers and empty-array prototypes. No NumPy conversion is needed:\n\nv = %apl 1 2 4\nv\n\n[1., 2., 4.]\n\n\nPython operators use bAsedPL’s array semantics. Python determines precedence, so this multiplies before adding:\n\nv * 2 + 1\n\n[3., 5., 9.]\n\n\nIndexing is one-based, as in APL. A full : selects an axis. Iteration yields rows of a matrix rather than individual elements:\n\na = %apl 2 3⍴⍳6\na.shape, a[1, :], a[:, 2], list(a)\n\n((2, 3), [1., 2., 3.], [2., 5.], [[1., 2., 3.], [4., 5., 6.]])\n\n\nbAsedPL also exposes functions by their word names. plus.reduce is +/; adding .each applies it to each nested element:\n\nfrom basedpl import Array, plus, tally\n\n\nnested = %apl (1 2)(3 4 5)\nnested\n\n[Array([1., 2.]), Array([3., 4., 5.])]\n\n\n\n%%apl\nn←(1 2)(3 4 5)\n+/¨n\n\n3 12\n\n\nThe same Each/reduction pattern works with division:\n\n%%apl\n÷/¨n\n\n0.5 3.75\n\n\nIn Python, chain the corresponding word functions:\n\nplus.reduce.each(nested)\n\n[3., 12.]\n\n\n\nf = plus.reduce.each\nf(nested)\n\n[3., 12.]\n\n\nPython integers become exact values. Functions compose too: plus.reduce / tally builds the mean function +/÷≢. Its result is still a native array, even when scalar:\n\nexact = Array([1, 2, 4])\nmean_native = plus.reduce / tally\nmean_native(exact)\n\nArray((7, 3))\n\n\nThe native representation uses Python numeric notation: 2 is exact and 2. is approximate. .apl returns the APL display as a string:\n\nv.apl, exact.apl\n\n('1 2 4', '1x 2x 4x')\n\n\n\nExample algorithms\nLet’s create a function to list primes.\nA prime has exactly two positive divisors. |⌝ forms an outer product of remainders; ⍨ supplies the same argument on both sides. Row i below marks multiples of i:\n\n%%apl\nn←⍳10\n0=|⌝⍨n\n\n1x 1x 1x 1x 1x 1x 1x 1x 1x 1x\n0x 1x 0x 1x 0x 1x 0x 1x 0x 1x\n0x 0x 1x 0x 0x 1x 0x 0x 1x 0x\n0x 0x 0x 1x 0x 0x 0x 1x 0x 0x\n0x 0x 0x 0x 1x 0x 0x 0x 0x 1x\n0x 0x 0x 0x 0x 1x 0x 0x 0x 0x\n0x 0x 0x 0x 0x 0x 1x 0x 0x 0x\n0x 0x 0x 0x 0x 0x 0x 1x 0x 0x\n0x 0x 0x 0x 0x 0x 0x 0x 1x 0x\n0x 0x 0x 0x 0x 0x 0x 0x 0x 1x\n\n\n+⌿ sums down the rows, counting each candidate’s divisors:\n\n%%apl\n+⌿0=|⌝⍨n\n\n1x 2x 2x 3x 2x 4x 2x 4x 3x 4x\n\n\n2= marks primes. Where (⍸) returns their positions, which equal the candidates because n←⍳10:\n\n%%apl\n⍸2=+⌿0=|⌝⍨n\n\n2x 3x 5x 7x\n\n\nSubstitute ⍳50 to list the primes up to 50:\n\n%%apl\n⍸2=+⌿0=|⌝⍨⍳50\n\n2x 3x 5x 7x 11x 13x 17x 19x 23x 29x 31x 37x 41x 43x 47x\n\n\nFinally, name it. The dfn takes the candidates as ⍵; the trailing ⍳ generates them:\n\n%%apl\nprimes ← {⍸2=+⌿0=|⌝⍨⍵}⍳\nprimes 50\n\n2x 3x 5x 7x 11x 13x 17x 19x 23x 29x 31x 37x 41x 43x 47x\n\n\nThe built-in prime glyph ℙ returns the nth prime, counting from one. Applied to ⍳15, it produces the same list directly:\n\n%%apl\nℙ⍳15\n\n2x 3x 5x 7x 11x 13x 17x 19x 23x 29x 31x 37x 41x 43x 47x\n\n\nThe fibonacci sequence:\n\nfib = %apl {⍵,+/¯2↑⍵}⍣15⊢1 1\nfib.np\n\narray([1.000e+00, 1.000e+00, 2.000e+00, 3.000e+00, 5.000e+00, 8.000e+00,\n       1.300e+01, 2.100e+01, 3.400e+01, 5.500e+01, 8.900e+01, 1.440e+02,\n       2.330e+02, 3.770e+02, 6.100e+02, 9.870e+02, 1.597e+03])\n\n\nExplanation:\n\n1 1: Initial seed (first two Fibonacci numbers)\n{⍵,+/¯2↑⍵}: Function that appends the sum of the last two elements\n⍣15: Apply the function 15 times\n⊢: Identity function, passes the initial argument (1 1) to the iteration",
+    "crumbs": [
+      "aplnb"
+    ]
+  },
+  {
+    "objectID": "index.html#labelled-arrays",
+    "href": "index.html#labelled-arrays",
+    "title": "aplnb",
+    "section": "Labelled arrays",
+    "text": "Labelled arrays\nArrays can carry keys for positions and names for axes, without becoming a separate table type. A keyed vector pairs each axis name with its position keys, in axis order. Here axes: labels the rows by city and the columns by month:\n\n%%apl\naxes←'city' 'month':('London' 'Paris' ⋄ 'Jan' 'Feb' 'Mar')\nsales←axes:[10 20 30 ⋄ 40 50 60]\nsales\n\n       Jan Feb Mar\nLondon  10  20  30\n Paris  40  50  60\n\n\nBrackets select positions by key. Function qualifiers select axes by name: summing over month leaves a total for each city, retaining its labels.\n\n%%apl\nsales['Paris';'Feb']\n+/['month']sales\n\n50\n('London':60 ⋄ 'Paris':150)\n\n\nNative Python arrays retain both kinds of metadata:\n\nsales = %apl sales\nsales.axis_names, sales.axis_keys\n\n(('city', 'month'), (('London', 'Paris'), ('Jan', 'Feb', 'Mar')))\n\n\nArithmetic matches named axes and aligns their keys, rather than relying on order. This adjustment lists the months backwards but still adds 1 to January, 2 to February and 3 to March in each city. .df copies the result to pandas, preserving labels; install basedpl[pandas] to use it.\n\nadjustment = Array([3, 2, 1], axis_keys=(('Mar', 'Feb', 'Jan'),), axis_names=('month',))\n(sales + adjustment).df\n\n\n\n\n\n\n\nmonth\nJan\nFeb\nMar\n\n\ncity\n\n\n\n\n\n\n\nLondon\n11.0\n22.0\n33.0\n\n\nParis\n41.0\n52.0\n63.0\n\n\n\n\n\n\n\nUnlabelled arrays keep their usual positional behaviour. See Axis keys for construction, updates and alignment rules.",
+    "crumbs": [
+      "aplnb"
+    ]
+  },
+  {
+    "objectID": "index.html#csv-and-json",
+    "href": "index.html#csv-and-json",
+    "title": "aplnb",
+    "section": "CSV and JSON",
+    "text": "CSV and JSON\nCSV headers become keys on a vector of columns. Numeric columns use compact storage. These two orders total 101:\n\n%%apl\nnl←•ucs 10\norders←•csv 'price,qty',nl,'10.5,2',nl,'20,4'\n+/orders.price×orders.qty\n\n101\n\n\nJSON objects use the same keyed arrays. Parse a record and select a field:\n\n%%apl\nrecord←•json '{\"name\":\"Ada\",\"scores\":[8,9,10]}'\nrecord.name\n+/record.scores\n\nAda\n27x\n\n\nA dyadic call exports JSON. For files, compose a parser with •nget, e.g. •csv •nget 'orders.csv'. See files, CSV and JSON for dialect and file options.\n\n%%apl\nrecord •json ''\n\n{\"name\":\"Ada\",\"scores\":[8,9,10]}",
+    "crumbs": [
+      "aplnb"
+    ]
+  },
+  {
+    "objectID": "index.html#using-basedpl-from-python",
+    "href": "index.html#using-basedpl-from-python",
+    "title": "aplnb",
+    "section": "Using bAsedPL from Python",
+    "text": "Using bAsedPL from Python\nThe magics use basedpl.Session. Calling a session returns a native array or function and prints explicit APL output. apl.eval(...) returns a Result with the native .value and captured .output without printing. Both suppress implicit APL display. Use .np or .py when you need a converted result:\n\nimport numpy as np\nfrom basedpl import Session\n\n\napl = Session()\napl('3 3⍴⍳9').np\n\narray([[1., 2., 3.],\n       [4., 5., 6.],\n       [7., 8., 9.]])\n\n\nModule and session attributes expose the builtins. Glyph names (add, dash, mul, div) accept either valence; operation names (plus, subtract, times, divide) curry a dyadic call. Thus add with one argument conjugates, while plus(2) binds the right argument:\n\napl.add(2+3j).py, apl.plus(2)(3).py, apl.times(2)([1, 2, 3]).py\n\n((2-3j), 5, array([2, 4, 6]))\n\n\nKeyword arguments bind Python values in the workspace. Square brackets read an APL expression or assign a value:\n\napl(x=np.arange(1, 6))\napl['v'] = [3,1,4,1,5]\napl['{⍵[⍋⍵]}v'].np\n\narray([1, 1, 3, 4, 5])\n\n\nfn makes a composable Function from an APL function expression. Pass one argument for a monadic call or two for a dyadic call. Python integers stay exact, so .py converts this mean to a Fraction rather than a float:\n\napl('mean←{⍝ Mean of a vector\\n(+/⍵)÷≢⍵}')\nmean = apl.fn('mean')\nmean([1,2,4]).py\n\nFraction(7, 3)\n\n\n\nNames and help\nType mean? for its comment help and mean?? for APL source. The same information is available programmatically:\n\nmean.source, apl.names('me')\n\n('{⍝ Mean of a vector\\n(+/⍵)÷≢⍵}', ['mean'])\n\n\nIn APL input, use %apl ]help primes or a %%apl cell containing ]help primes -source. Tab completes user and system names. APL code can inspect names directly:\n\n%%apl\n•nc 'sales' 'primes'\n'pr' •nl 3\n\n2x 3x\n(primes)\n\n\nSee names and help for source lookup, erasure and inspection APIs.\nfn is late-bound: apl.fn('foo') follows later redefinitions of foo. Use create_magic(session=apl) to share a Python session with the magics.\nUse a session as a context manager (with Session() as apl:), or close it when finished:\n\napl.close()",
+    "crumbs": [
+      "aplnb"
+    ]
+  },
+  {
+    "objectID": "index.html#the-apl-magics",
+    "href": "index.html#the-apl-magics",
+    "title": "aplnb",
+    "section": "The apl magics",
+    "text": "The apl magics\nHold left Alt/Option for bAsedPL’s glyph keyboard: Alt-h ←, Alt-minus ×, Alt-equals ÷, Alt-Shift-a ⍶. Right Option keeps its native behavior. Chords work in APL input, including strings and comments.\nType a backtick followed by a bAsedPL symbol name: `io then Tab inserts ⍳, and 2`times3 becomes 2×3. Suggestions appear beside the cursor as you type, including the REPL’s shortcut notation: h means Alt-h, Sa means Alt-Shift-a. Click a suggestion or keep typing to resolve an ambiguous name. Names and aliases come from bAsedPL’s REPL catalogue.\nCompletion is active in %%apl cells and on %apl lines, including x = %apl .... Ordinary Python and Markdown input is unchanged. Strings, comments and pasted text are not expanded. Tab explicitly completes an existing name. Enter accepts a unique match before the notebook’s normal newline or execution action. Escape or cursor movement cancels automatic expansion.\nThe first apl magic also adds a clickable symbol bar, based on Adám Brudzewsky’s APL language bar. Hover over a glyph to see its names and shortcut. The ▲/▼ button switches between pushing the page down and overlaying it. This choice is remembered per site.\nThe cell magic (%%apl) displays bAsedPL session output in Adám’s SAX2 APL font:\n\n%%apl\nm←3 3⍴⍳9\nm×10\n\n10 20 30\n40 50 60\n70 80 90\n\n\nAssignments are shy: the m← line printed nothing. The line magic returns a native array. Use .np to copy its values to NumPy:\n\nv = %apl 3×⍳4\nv.np\n\narray([ 3.,  6.,  9., 12.])\n\n\n\ntext = %apl 'APL in Python'\ntext.py\n\n'APL in Python'\n\n\n.py converts numeric atoms to Python numbers and character vectors to strings. Unkeyed numeric arrays become NumPy arrays, keyed vectors become dictionaries, and higher-rank keyed arrays become pandas DataFrames. Numeric scalars (rank-0 arrays) become zero-dimensional NumPy arrays. .np copies values to NumPy without labels:\n\nz = %apl m\nz.np\n\narray([[1., 2., 3.],\n       [4., 5., 6.],\n       [7., 8., 9.]])\n\n\nTo suppress a cell’s output, end the last line with a ;:\n\n%%apl\nm×10;\n\n⎕← displays a value explicitly, which is how you show something that would otherwise be shy:\n\n%%apl\nv←2×⍳5\n⎕←v\n\n2 4 6 8 10\n\n\nConvert to NumPy to use its methods:\n\na = %apl m\na.np.sum(axis=0)\n\narray([12., 15., 18.])",
+    "crumbs": [
+      "aplnb"
+    ]
+  },
+  {
+    "objectID": "index.html#regex",
+    "href": "index.html#regex",
+    "title": "aplnb",
+    "section": "Regex",
+    "text": "Regex\n•r compiles a Rust regex into functions for matching, positions, groups and replacement:\n\n%%apl\ncodes←•r '([A-Z]+)-([0-9]+)'\ncodes.match 'AB-12 CD-3'\ncodes.position 'AB-12 CD-3'\n'$2:$1' codes.replace 'AB-12 CD-3'\n\n(AB-12) (CD-3)\n1x 7x\n12:AB 3:CD",
+    "crumbs": [
+      "aplnb"
+    ]
+  },
+  {
+    "objectID": "index.html#probability-distributions",
+    "href": "index.html#probability-distributions",
+    "title": "aplnb",
+    "section": "Probability distributions",
+    "text": "Probability distributions\nConstruct a standard normal, then evaluate its CDF and quantiles. Distribution methods accept arrays:\n\n%%apl\nnormal←•normal 0 1\nnormal.cdf ¯1 0 1\nnormal.quantile 0.025 0.5 0.975\n\n0.15865525394505725 0.5 0.8413447460549428\n¯1.9599639845400545 0 1.9599639845400538\n\n\nSampling takes a shape. These draws remain a native array until .np converts them:\n\ndraws = %apl normal.sample 2 3\ndraws.np\n\narray([[ 1.13425439,  0.50212334, -0.69961591],\n       [ 2.16752983, -0.70488529, -1.72144746]])\n\n\nFor discrete distributions, density gives probability mass. A fair coin tossed twice has probabilities ¼, ½, ¼ for zero, one or two heads:\n\n%%apl\ncoin←•binomial 2 0.5\ncoin.density 0 1 2\n\n0.25 0.5 0.25\n\n\nSee distributions for the 17 families, and regex for captures and replacement options.",
+    "crumbs": [
+      "aplnb"
+    ]
+  },
+  {
+    "objectID": "index.html#native-apl-kernel",
+    "href": "index.html#native-apl-kernel",
+    "title": "aplnb",
+    "section": "Native APL kernel",
+    "text": "Native APL kernel\nThe basedpl package also installs the bAsedPL Jupyter kernel. In that kernel, write APL directly without %%apl. Shift-Tab inspects names and glyphs; ]help name and ]help name -source show help and source. Use aplnb’s Python kernel integration when mixing Python and APL in the same notebook.",
+    "crumbs": [
+      "aplnb"
+    ]
+  },
+  {
+    "objectID": "index.html#dyalog-reference-sessions",
+    "href": "index.html#dyalog-reference-sessions",
+    "title": "aplnb",
+    "section": "Dyalog reference sessions",
+    "text": "Dyalog reference sessions\nUse aplnb.dyalog when you need Dyalog as an independent reference interpreter. Dyalog must be installed separately. This session API does not change the %apl or %%apl magics, which continue to use bAsedPL:\n\nfrom aplnb.dyalog import Apl\n\n\nwith Apl() as dyalog: total = dyalog.pyval('+/⍳10')\ntotal\n\n55\n\n\npyval returns JSON-converted Python values. run returns session output as text. See Dyalog sessions for assignment, function calls and error handling.",
+    "crumbs": [
+      "aplnb"
+    ]
+  },
+  {
+    "objectID": "index.html#errors-and-interruption",
+    "href": "index.html#errors-and-interruption",
+    "title": "aplnb",
+    "section": "Errors and interruption",
+    "text": "Errors and interruption\nAPL errors raise basedpl.AplError. The magics display output produced before the error. Incomplete input raises a syntax error without resetting the workspace.\nInterrupt a calculation with the notebook’s stop button. Set a per-evaluation deadline with Session(timeout=seconds) or magic.session.timeout = seconds. Sessions use a Rust worker thread. Cooperative cancellation preserves the workspace and completed assignments. Native-library calls and individual BigInt operations can delay cancellation; the thread is never forcibly killed.\nbAsedPL is an APL-derived array language, borrowing from J and BQN. See its language guide for glyphs, array rules and system functions.",
+    "crumbs": [
+      "aplnb"
+    ]
+  },
+  {
+    "objectID": "index.html#learning-apl",
+    "href": "index.html#learning-apl",
+    "title": "aplnb",
+    "section": "Learning APL",
+    "text": "Learning APL\nTo start learning APL, follow the 17 video series run by Jeremy Howard, and have a look at the study notes. These use Dyalog APL. Interpreter-specific features and user commands differ in bAsedPL.",
+    "crumbs": [
+      "aplnb"
+    ]
+  }
+]
